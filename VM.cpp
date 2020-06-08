@@ -1,5 +1,5 @@
 #include <iostream>
-#include <vector>
+#include <string>
 
 using std::cout;
 using std::endl;
@@ -8,9 +8,10 @@ using std::endl;
 // ~ amount to 130 ko of memory, no need for dynamic allocation
 uint16_t memory[UINT16_MAX];	
 // amount of reserved space in memory ( for flags for example )
-const uint16_t RESERVED_SPACE = 4;
+const uint16_t RESERVED_SPACE = 2;
 
 // registers order inside the reg array
+// cannot be higher than 16, as we use 4bits to address registers in instructions
 enum 
 {
 	r0 = 0,
@@ -21,14 +22,13 @@ enum
 	r5,
 	r6,
 	r7,
-	rsp,
+	rsp,		// 8.
+	rip,		// 9.
 	R_COUNT
 };
 
 // array containing the registers access like reg[r2]
 uint16_t reg[ R_COUNT ];
-// should not be modifiable with ADD, SUB and MOV
-uint16_t rip; 
 
 
 // initialize registers to 0
@@ -45,50 +45,80 @@ void initializeRegisters( void )
 // display the stack values
 void dispMemoryStack( bool showReserved = false )
 {
-	cout << "┌────────────────────\n│ -- Memory Stack" << endl;
+	cout << "┌────────────────────┐\n│ -- Memory Stack    │" << endl;
+
 	for( int i = reg[rsp]; i >= RESERVED_SPACE; i-- )
 	{
-		cout << "│ " << i << ":\t  " << static_cast<int16_t>(memory[i]) << endl;
+		int16_t value = static_cast<int16_t>(memory[i]);
+		int s = 11 - std::to_string( value ).length(); 
+		cout << "│ " << i << "\t";
+		for( int j=0; j<s; j++ ) // align numbers on the right
+		{
+			cout << " ";
+		}
+		cout << value << "  │" << endl;
 	}
 
-	cout << "│ -- Reserved Memory" << endl;
+	cout << "│ -- Reserved Memory │" << endl;
 	if( showReserved )
 	{
-		for( int i = RESERVED_SPACE-1; i >= 0; i-- )
-		{
-			cout << "│ " << i << ":\t  " << static_cast<int16_t>(memory[i]) << endl;
+			for( int i = RESERVED_SPACE-1; i >= 0; i-- )
+			{
+			int16_t value = static_cast<int16_t>(memory[i]);
+			int s = 11 - std::to_string( value ).length(); 
+			cout << "│ " << i << "\t";
+			for( int j=0; j<s; j++ ) // align numbers on the right
+			{
+				cout << " ";
+			}
+			cout << value << "  │" << endl;
 		}
 	}
-	cout << "└────────────────────" << endl;
+	cout << "└────────────────────┘" << endl;
 
 }
 
-
+// encoded with 4 bit : maximum 16 different opcode
 // enum for op codes ! subject to change !
-enum OP
-{
-	BR = 0,		// 0. branch 
-	ADD,    	// 1. add  
-	SUB,		// 2. substract
-	MOV,		// 3. copy
-	PUSH,		// 4. push on the stack
-	POP,		// 5. pop the stack
-	CMP,		// 6. compare two values
-	AND,    	// . bitwise AND 
-	OR,			// . bitwise OR
-	NOT,		// . bitwise NOT
-	JUMP,		// . jump 
-	LEA,    	// . load effective address 
-	TRAP    	// . execute trap 
+enum OP												
+{													
+	BR = 0,		
+	ADD,    	
+	SUB,		
+	CMP,
+	COPY,		
+	PUSH,		
+	POP,		
+	MUL,
+	DIV,
+	AND,    	
+	OR,			
+	NOT,		
+	JUMP,		
+	TRAP    	
 };
 
 
 enum Flag
 {
-	ZRO = 1,
-	EQU = 2,
-	POS = 3,
-	NEG = 4
+	EQU = 0,
+	ZRO,
+	POS,
+	NEG,
+	OVF,
+	F_COUNT
 };
 
+bool flags[F_COUNT];
 
+void dispFlagsRegister( void )
+{
+	cout << "┌─────┬─────┬─────┬─────┬─────┐" << endl;
+	cout << "│ EQU │ ZRO │ POS │ NEG │ OVF │" << endl;
+	for( int i=0; i<F_COUNT; i++ )
+	{
+		cout << "│  " << flags[i] <<  "  ";
+	}
+	cout << "│ \n" << "└─────┴─────┴─────┴─────┴─────┘" << endl;
+;
+}

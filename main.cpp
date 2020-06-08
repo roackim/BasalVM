@@ -9,24 +9,27 @@ int main( void )
 {
 	initializeRegisters();
 
-	reg[r3] = -3;  
-	reg[r2] = 1;	
+	// cout << "r3 :\t" << static_cast<int16_t>(reg[r3]) << endl;
+	reg[r2] = 17;	
+	// processInstruction( 0x01032000 ); // add r3 to r2
+	// cout << "r3 :\t" << static_cast<int16_t>(reg[r3]) << endl;
 
-	// cout << static_cast<int16_t>(reg[r2]) << endl;
-
-	processInstruction( 0x041000FF );
-	processInstruction( 0x041000FE );
-	processInstruction( 0x0410000E );
-	processInstruction( 0x041000FD );
+	processInstruction( 0x51007FFF );
+	processInstruction( 0x51000050 );
+	processInstruction( 0x510000AE );
 
 	dispMemoryStack();
-	processInstruction( 0x05020000 ); 
+	processInstruction( 0x1A820001 );
+	//processInstruction( 0x10800001 );
 	dispMemoryStack();
-	cout << "after the top: " << static_cast<int16_t>(memory[reg[rsp]+1]) << endl;
+	dispFlagsRegister();
 
-	// value still exist after decrement of reg[rsp]
-	// cout << static_cast<int16_t>(memory[reg[rsp]+1]) << endl;
+	processInstruction( 0x1A82000F );
+	//processInstruction( 0x10800001 );
+	dispMemoryStack();
+	dispFlagsRegister();
 
+	// dispMemoryStack();
 
 
 	return 0;
