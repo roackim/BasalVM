@@ -7,6 +7,11 @@ using std::endl;
 // array of word addresses  (16 bits offset)
 // ~ amount to 130 ko of memory, no need for dynamic allocation
 uint16_t memory[UINT16_MAX];	
+
+// amount to ~ 130 ko of memory, no need for dynamic allocation
+// allow for ~ 32700 instructions per program.
+uint32_t program[UINT16_MAX / 2];
+
 // amount of reserved space in memory ( for flags for example )
 const uint16_t RESERVED_SPACE = 2;
 
@@ -14,16 +19,16 @@ const uint16_t RESERVED_SPACE = 2;
 // cannot be higher than 16, as we use 4bits to address registers in instructions
 enum 
 {
-	r0 = 0,
-	r1,
-	r2,
-	r3,
-	r4,
-	r5,
-	r6,
-	r7,
-	rsp,		// 8.
-	rip,		// 9.
+	ax = 0,
+	bx,
+	cx,
+	dx,
+	ex,
+	fx,
+	si,	
+	di,
+	sp,		// 8.
+	ip,		// 9.
 	R_COUNT
 };
 
@@ -38,8 +43,9 @@ void initializeRegisters( void )
 	{
 		reg[i] = 0;
 	}
-	// push will increment reg[rsp] before assignement
-	reg[rsp] = RESERVED_SPACE-1; // save space for flags
+	// push will increment reg[sp] before assignement
+	reg[sp] = RESERVED_SPACE-1; // save space for flags
+	reg[ip] = 0;
 }
 
 // display the stack values
@@ -47,7 +53,7 @@ void dispMemoryStack( bool showReserved = false )
 {
 	cout << "┌────────────────────┐\n│ -- Memory Stack    │" << endl;
 
-	for( int i = reg[rsp]; i >= RESERVED_SPACE; i-- )
+	for( int i = reg[sp]; i >= RESERVED_SPACE; i-- )
 	{
 		int16_t value = static_cast<int16_t>(memory[i]);
 		int s = 11 - std::to_string( value ).length(); 
@@ -82,43 +88,23 @@ void dispMemoryStack( bool showReserved = false )
 // enum for op codes ! subject to change !
 enum OP												
 {													
-	BR = 0,		
-	ADD,    	
-	SUB,		
-	CMP,
-	COPY,		
-	PUSH,		
-	POP,		
-	MUL,
-	DIV,
-	AND,    	
-	OR,			
-	NOT,		
-	JUMP,		
+	BR = 0,		//
+	ADD,    	// 1.
+	SUB,		// 2.
+	CMP,		// 3.
+	COPY,		// 4.
+	PUSH,		// 5.
+	POP,		// 6.
+	MUL,		// 7.
+	DIV,		// 8.
+	MOD,		// 9.
+	AND,    	// 10.
+	OR,			// 11.
+	NOT,		// 12.
+	XOR,		// 13.
+	JUMP,		// 14.
 	TRAP    	
 };
 
 
-enum Flag
-{
-	EQU = 0,
-	ZRO,
-	POS,
-	NEG,
-	OVF,
-	F_COUNT
-};
 
-bool flags[F_COUNT];
-
-void dispFlagsRegister( void )
-{
-	cout << "┌─────┬─────┬─────┬─────┬─────┐" << endl;
-	cout << "│ EQU │ ZRO │ POS │ NEG │ OVF │" << endl;
-	for( int i=0; i<F_COUNT; i++ )
-	{
-		cout << "│  " << flags[i] <<  "  ";
-	}
-	cout << "│ \n" << "└─────┴─────┴─────┴─────┴─────┘" << endl;
-;
-}

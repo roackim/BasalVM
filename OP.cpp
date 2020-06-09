@@ -1,6 +1,7 @@
 #include <iostream>
-#include "VM.cpp"
 #include <string>
+#include "VM.cpp"
+#include "Flags.cpp"
 
 using std::cout;
 using std::endl;
@@ -12,51 +13,14 @@ void Error( string message )
 	exit( -1 );
 }
 
-// transform a bool for [0;1] to [1;-1]
+// helper function : transform a bool for [0;1] to [1;-1]
 short coef( bool value )
 {
 	return -(value*2 -1);
 }
 
-// update every flag except Overflow since it needs operands value. Special case for EQU and ZRO see below
-// sub_or_cmp : false for sub (ZRO flag) and true for cmp (EQU flag)
-void updateFlags( int16_t value, bool cmp = false)
-{
-	if( value == 0 )
-	{
-		if( cmp == false )
-			flags[ZRO] = 1;
-		else 
-			flags[EQU] = 1;
-	}
-	else if( value < 0 )
-	{
-		flags[NEG] = 1;
-		flags[POS] = 0;
-	}
-	else
-	{
-		flags[NEG] = 0;
-		flags[POS] = 1;
-	}
-}
 
-// check if you can get back to the operand from the result, if not, result has be troncated
-void updateAddOverflow(  int16_t dest, int16_t src )
-{
-	int16_t result = dest + src;
-	if( dest != result - src )	flags[OVF] = 1; 
-	else flags[OVF] = 0;
-}
-
-// check if you can get back to the operand from the result, if not, result has be troncated
-int16_t updateSubOverflow(  int16_t dest, int16_t src )
-{
-	int16_t result = dest - src;
-	if( dest != result + src ) cout << "Overflow destected" << endl;
-	return result;
-}
-
+// check if the address is RESERVED
 void checkForSegfault( int16_t address )
 {
 	if( address < RESERVED_SPACE )
@@ -69,7 +33,7 @@ void checkForSegfault( int16_t address )
 
 // add a value (from a register or immediate) to a destination register
 // modify flags ZRO, NEG and POS
-void executeADD( uint32_t instruction )
+void executeOP( uint32_t instruction, OP op )
 {
 	// 4 bits for sign and mod : 1bit of sign, 3bits of mode value
 	short mode		= ( instruction & 0x07000000 ) >> 24;	// mode of the instruction
@@ -134,16 +98,75 @@ void executeADD( uint32_t instruction )
 		Error( "Unknown mode for instruction 'add'" );
 
 	if( src_p != NULL )
+		value = *src_p;
+	
+	switch( op )
 	{
-		updateAddOverflow( *dest_p, *src_p );
-		*dest_p += *src_p;
+		case ADD :
+			updateAddOverflow( *dest_p, value );
+			*dest_p += value;
+			updateFlags( *dest_p ); break;
+
+		case SUB:
+			updateSubOverflow( *dest_p, value );
+			*dest_p -= value;
+			updateFlags( *dest_p ); break;
+
+		case COPY:
+			*dest_p = value;
+			updateFlags( *dest_p ); break;
+
+		case CMP:
+			if( static_cast<int16_t>(*dest_p) < 0 and value > 0 ) // avoid overflow
+			{
+				flags[POS] = 0;
+				flags[NEG] = 1;
+			}
+			else if( static_cast<int16_t>(*dest_p) > 0 and value < 0 )
+			{
+				flags[POS] = 1;
+				flags[NEG] = 0;	
+			}
+			else // no overflow possible left, substract normally
+			{	// process result in a local variable, in order to preserve destination 
+				uint16_t result = *dest_p - value;
+				updateFlags( result );
+			}
+			break;
+
+		case MUL:
+			updateMulOverflow( *dest_p, value );
+			*dest_p *= value;
+			updateFlags( *dest_p ); break;
+
+		case DIV:
+			*dest_p /= value;
+			updateFlags( *dest_p ); break;
+
+		case MOD:
+			*dest_p %= value;
+			updateFlags( *dest_p ); break;
+
+		case AND:
+			*dest_p &= value; 
+			updateFlags( *dest_p ); break;
+
+		case OR:
+			*dest_p |= value;
+			updateFlags( *dest_p ); break;
+
+		case NOT:
+			*dest_p = ~(value);
+			updateFlags( *dest_p ); break;
+
+		case XOR:
+			*dest_p ^= (value);
+			updateFlags( *dest_p ); break;
+
+		default:
+			Error("Unexpected OP code");
+
 	}
-	else if( src_p == NULL )
-	{
-		updateAddOverflow( *dest_p, value );
-		*dest_p += value;
-	}
-	updateFlags( *dest_p );
 }
 
 
@@ -155,16 +178,16 @@ void executePUSH( uint32_t instruction )
 
 	mode &= 0x01;	// only look at the last bit
 
-	if( reg[rsp] < UINT16_MAX ) // check for room in VM memory
+	if( reg[sp] < UINT16_MAX ) // check for room in VM memory
 	{
 		if( mode == 0 )	// push src
 		{
-			memory[++reg[rsp]] = reg[src];
+			memory[++reg[sp]] = reg[src];
 		}
 		else if( mode == 1 ) // push immediate value
 		{
 			int16_t value = ( instruction & 0x0000FFFF );
-			memory[++reg[rsp]] = value;
+			memory[++reg[sp]] = value;
 		}
 	}
 	else // not enough memory left to push
@@ -174,15 +197,15 @@ void executePUSH( uint32_t instruction )
 // take the top value, and decrement rsp, while placing ( or discarding ) the value in a register
 void executePOP( uint32_t instruction ) 
 {
-	if( reg[rsp] >= RESERVED_SPACE )
+	if( reg[sp] >= RESERVED_SPACE )
 	{
 		uint16_t mode	= ( instruction & 0x00F00000 ) >> 20;	// mode of the instruction
 		uint16_t dest 	= ( instruction & 0x000F0000 ) >> 16;	// dest register
 		if( mode == 0 ) // if mode is at 0, save top value to a dest reg, otherwise just discard it
 		{
-			reg[dest] = memory[reg[rsp]]; // mov top of stack in destination register
+			reg[dest] = memory[reg[sp]]; // mov top of stack in destination register
 		}
-		reg[rsp] -= 1; // decrease rsp
+		reg[sp] -= 1; // decrease rsp
 	}
 	else 
 	{
@@ -210,20 +233,15 @@ void processInstruction( uint32_t instruction )
 	
 	switch( op )
 	{
-		case ADD :
-			executeADD( instruction );
-			break;
-		case SUB :
-			// executeSUB( instruction );
-			break;
-		case COPY :
-			// executeMOV( instruction );
-			break;
 		case PUSH:
 			executePUSH( instruction );
 			break;
+			
 		case POP :
 			executePOP( instruction );
 			break;
+
+		default :
+			executeOP( instruction, op );
 	}
 }
