@@ -84,27 +84,5 @@ void dispMemoryStack( bool showReserved = false )
 
 }
 
-// encoded with 4 bit : maximum 16 different opcode
-// enum for op codes ! subject to change !
-enum OP												
-{													
-	BR = 0,		//
-	ADD,    	// 1.
-	SUB,		// 2.
-	CMP,		// 3.
-	COPY,		// 4.
-	PUSH,		// 5.
-	POP,		// 6.
-	MUL,		// 7.
-	DIV,		// 8.
-	MOD,		// 9.
-	AND,    	// 10.
-	OR,			// 11.
-	NOT,		// 12.
-	XOR,		// 13.
-	JUMP,		// 14.
-	TRAP    	
-};
-
 
 

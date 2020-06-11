@@ -9,28 +9,36 @@ int main( void )
 {
 	initializeRegisters();
 
-	// cout << "r3 :\t" << static_cast<int16_t>(reg[r3]) << endl;
 	reg[cx] = 17;	
-	// processInstruction( 0x01032000 ); // add r3 to r2
-	// cout << "r3 :\t" << static_cast<int16_t>(reg[r3]) << endl;
+	reg[ax] = 7;
+	reg[bx] = 3;
 
-	processInstruction( 0x51000011 );
-	processInstruction( 0x51000050 );
-	processInstruction( 0x510000AE );
+	// processInstruction( 0xF7200000 ); // input cx
+	// processInstruction( 0xF0210000 ); // disp cx
+
+	processInstruction( 0x510000FF ); // push
+
+
+	processInstruction( 0x43208000 ); // copy sp, cx
+	processInstruction( 0x10200001 ); // add   1, cx
+
+
+	processInstruction( 0xF8200000 ); // input str
+
+	 // processInstruction( 0x51000061 ); // push a
+	 // processInstruction( 0x51000062 ); // push b
+	 // processInstruction( 0x51000063 ); // push c
+	 // processInstruction( 0x51000064 ); // push d
+	 // processInstruction( 0x51000000 ); // push NULL
+
+	// processInstruction( 0xF4210000 ); // disp value at memory[cx] then disp "\n"
+
+	dispMemoryStack();
 	
-	processInstruction( 0x3A820000 ); // cmp
-
-	dispMemoryStack();
-	dispFlagsRegister();
-	processInstruction( 0xAA820001 );
-	//processInstruction( 0x10800001 );
-	dispMemoryStack();
-	dispFlagsRegister();
-
-	processInstruction( 0x1A82000F );
-	//processInstruction( 0x10800001 );
-	dispMemoryStack();
-	dispFlagsRegister();
+	cout << "Printing string from memory stack : \n->>" << endl;
+	processInstruction( 0xF3210000 ); // disp string starting at memory[cx], until NULL then disp "\n"
+	cout << endl;
+	//dispFlagsRegister();
 
 	// dispMemoryStack();
 
