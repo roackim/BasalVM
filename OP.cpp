@@ -20,11 +20,12 @@ short coef( bool value )
 	return -(value*2 -1);
 }
 
+// TODO RAND and WAIT
 // encoded with 4 bit : maximum 16 different opcode
 // enum for op codes ! subject to change !
 enum OP		// something for input ?							
 {													
-	HALT = 0,	//	.0			// maybe not necessary conflict with NULL terminated strings ? add different bits ?
+	IO = 0,		//	.0			// used to communicate with the outside world
 	ADD,		// 	.1
 	SUB,		// 	.2
 	CMP,		// 	.3
@@ -37,8 +38,8 @@ enum OP		// something for input ?
 	AND,		// 	.10 
 	OR,			// 	.11
 	NOT,		// 	.12
-	XOR,		// 	.13			// maybe not necessary because: a xor b = (a or b) and not(a and b)
-	JUMP,		// 	.14			// contains CALL and RET
+	XOR,		// 	.13	
+	JUMP,		// 	.14			// contains CALL and RET maybe HALT too ?
 	PROMPT		// 	.15			// may contain input handling ? like a PROMPT
 };
 
@@ -234,6 +235,7 @@ void executePOP( uint32_t instruction )
 		Error("Stack is empty");
 }
 
+// Either act as a cout or a cin, either with a value or a string
 void executePROMPT( uint32_t instruction ) 
 {
 	uint16_t mode	= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
@@ -275,7 +277,7 @@ void executePROMPT( uint32_t instruction )
 			int16_t value; cin >> value;
 			reg[src] = static_cast<uint16_t>(value); break;
 
-		case 8: // input a string, to be put on the stack
+		case 8: // input a string, to be pushed on the stack
 			char str[256]; cin.get(str, 256, '\n'); // null terminated by default
 			if( reg[sp] + 1 < UINT16_MAX - 256 ) // check if there is enough room
 			{
@@ -287,11 +289,8 @@ void executePROMPT( uint32_t instruction )
 			}
 			break;
 	}
-
 	// print a new line if requested
 	if( newline ) cout << endl;
-		
-
 }
 
 
@@ -319,9 +318,6 @@ void processInstruction( uint32_t instruction )
 		case POP:
 			executePOP( instruction ); break;
 
-		case HALT:
-			//TODO
-			break;
 		case JUMP:
 			//TODO
 			break;

@@ -22,7 +22,7 @@ int main( void )
 	processInstruction( 0x43208000 ); // copy sp, cx
 	processInstruction( 0x10200001 ); // add   1, cx
 
-
+	cout << "input string :\n-> " ;
 	processInstruction( 0xF8200000 ); // input str
 
 	 // processInstruction( 0x51000061 ); // push a
@@ -35,9 +35,8 @@ int main( void )
 
 	dispMemoryStack();
 	
-	cout << "Printing string from memory stack : \n->>" << endl;
+	cout << "Printing string from memory stack : \n" << endl;
 	processInstruction( 0xF3210000 ); // disp string starting at memory[cx], until NULL then disp "\n"
-	cout << endl;
 	//dispFlagsRegister();
 
 	// dispMemoryStack();
