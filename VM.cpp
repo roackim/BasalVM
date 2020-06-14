@@ -1,7 +1,10 @@
 #include <iostream>
 #include <string>
-#include "misc.hpp"
+#include <time.h> // used for seeding PRNG with entropy
+#include <chrono> // used for cross platform sleep call
+#include <thread>
 
+#include "misc.hpp"
 #include "VM.h"
 
 using std::string;
@@ -25,7 +28,7 @@ OP getInstruction( uint32_t instruction )
 //	|    VM basic functions    |
 //	+--------------------------+
 
-// initialize registers to 0
+// initialize registers to 0, initialize PRNG generator with entropy
 void VM::initialize( void )
 {
 	for( int i = 0; i < R_COUNT; i++ )
@@ -35,6 +38,9 @@ void VM::initialize( void )
 	// push will increment reg[sp] before assignement
 	reg[sp] = RESERVED_SPACE-1; // save space for flags
 	reg[ip] = 0;
+
+	srand(time(NULL));
+	rnd_seed = rand();	 // seed the xorshift PRNG
 }
 
 // display the stack values
@@ -81,6 +87,19 @@ void VM::checkForSegfault( int16_t address )
 		exit( -1 );
 	}
 }
+
+// generate a 16bit random number
+uint16_t VM::xorshift16( void )
+{
+	/* Algorithm "xor" from p. 4 of Marsaglia, "Xorshift RNGs" */
+	uint16_t x = rnd_seed;
+	x ^= x << 7;
+	x ^= x >> 9;
+	x ^= x << 8;
+	rnd_seed = x;
+	return x;
+}
+
 
 //	+-----------------------------------+
 //	|    OP Interpretation Functions    |
@@ -202,22 +221,6 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 			*dest_p %= value;
 			updateFlags( *dest_p ); break;
 
-		case AND:
-			*dest_p &= value; 
-			updateFlags( *dest_p ); break;
-
-		case OR:
-			*dest_p |= value;
-			updateFlags( *dest_p ); break;
-
-		case NOT:
-			*dest_p = ~(value);
-			updateFlags( *dest_p ); break;
-
-		case XOR:
-			*dest_p ^= (value);
-			updateFlags( *dest_p ); break;
-
 		default:
 			Error("Unexpected OP code");
 
@@ -323,6 +326,77 @@ void VM::executePROMPT( uint32_t instruction )
 	if( newline ) cout << endl;
 }
 
+// take a register and set its value to a (pseudo) random one
+void VM::executeRAND( uint32_t instruction )
+{
+	uint16_t mode		= ( instruction & 0x0F000000 ) >> 24;	// chose range 
+	uint16_t dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register	
+	uint16_t max_value	= ( instruction & 0x0000FFFF );			// choose max value
+
+	if( dest > 7 ) // do not allow for sp and ip to be randomized
+		Error("Cannot randomize such register");
+
+	if( mode == 0 )		  // no max value
+		reg[dest] = static_cast<int16_t>(xorshift16());
+	else if( mode == 1 )  // -max_value < x < max_value
+		reg[dest] =  static_cast<int16_t>(xorshift16()) % max_value;
+	else if( mode == 2 )  // 0 <= x < max_value 	
+		reg[dest] = ( static_cast<int16_t>(xorshift16()) % max_value / 2 ) + ( max_value / 2 );
+}
+
+// Binary Operator : Either act as AND, OR, NOT or XOR, used to compress 4 instructions in 1 opcode
+void VM::executeBinBasedOP( uint32_t instruction ) 
+{
+	short mode		= ( instruction & 0x07000000 ) >> 24;	// mode of the instruction either AND, OR, NOT or XOR
+	short op		= ( instruction & 0x00F00000 ) >> 24;	// choose between immediate value or source register
+	short dest		= ( instruction & 0x000F0000 ) >> 20;	// destination register
+	short src		= ( instruction & 0x0000F000 ) >> 12;	// source register
+	uint16_t value	= ( instruction & 0x0000FFFF );			// immediate value
+
+	uint16_t* dest_p = &reg[dest];
+
+	if( op == 1 ) // source register
+	{
+		value = reg[src];
+	}
+
+	switch( mode ) // none of those operations can overflow
+	{
+		case 1:
+			*dest_p &= value; 
+			updateFlags( *dest_p ); break;
+
+		case 2:
+			*dest_p |= value;
+			updateFlags( *dest_p ); break;
+
+		case 3:
+			*dest_p = ~(value);
+			updateFlags( *dest_p ); break;
+
+		case 4:
+			*dest_p ^= (value);
+			updateFlags( *dest_p ); break;
+	}
+}
+
+// sleep for a certain amount of time before going to the next instruction
+void VM::executeWAIT( uint32_t instruction )
+{
+	uint16_t mode		= ( instruction & 0x0F000000 ) >> 24;	// chose range 
+	uint16_t value		= ( instruction & 0x0000FFFF );			// choose max value
+	// uncomment below to display precisely the time slept.
+    using namespace std::chrono_literals;
+    // auto start = std::chrono::high_resolution_clock::now();
+	if( mode == 0 )
+		std::this_thread::sleep_for(std::chrono::milliseconds( value ));
+	if( mode == 1 )
+		std::this_thread::sleep_for(std::chrono::seconds( value ));
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double, std::milli> elapsed = end-start;
+    // cout << "Waited " << elapsed.count() << " ms\n";
+}
+
 // redirect to the correct function depending on the instruction code contained in the first 8 bits
 void VM::processInstruction( uint32_t instruction )
 {
@@ -335,6 +409,12 @@ void VM::processInstruction( uint32_t instruction )
 			executePUSH( instruction ); break;
 		case POP:
 			executePOP( instruction ); break;
+		case BIN:
+			executeBinBasedOP( instruction ); break;
+		case RAND:
+			executeRAND( instruction ); break;
+		case WAIT:
+			executeWAIT( instruction ); break;
 
 		case JUMP:
 			//TODO
@@ -382,7 +462,7 @@ void VM::updateFlags( int16_t value, bool cmp )
 	flags[ODD] = value % 2;
 }
 
-// check if you can get back to the operand from the result, if not, result has be troncated
+// check if you can get back to the operand from the result, if not, result has overflowed
 void VM::updateAddOverflow(  int16_t dest, int16_t src )
 {
 	int16_t result = dest + src;
@@ -390,7 +470,7 @@ void VM::updateAddOverflow(  int16_t dest, int16_t src )
 	else flags[OVF] = 0;
 }
 
-// check if you can get back to the operand from the result, if not, result has be troncated
+// check if you can get back to the operand from the result, if not, result has overflowed
 void VM::updateSubOverflow(  int16_t dest, int16_t src )
 {
 	int16_t result = dest - src;
@@ -398,7 +478,7 @@ void VM::updateSubOverflow(  int16_t dest, int16_t src )
 	else flags[OVF] = 0;
 }
 
-// check if you can get back to the operand from the result, if not, result has be troncated
+// check if you can get back to the operand from the result, if not, result has overflowed
 void VM::updateMulOverflow(  int16_t dest, int16_t src )
 {
 	int16_t result = dest * src;

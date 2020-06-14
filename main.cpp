@@ -16,17 +16,18 @@ int main( void )
 	vm.reg[bx] = 3;
 
 	// vm.processInstruction( 0xF7200000 ); // input cx
-	// vm.processInstruction( 0xF0210000 ); // disp cx
+	vm.processInstruction( 0xD2200063 ); // cx -> RAND(0, 100)
+	vm.processInstruction( 0xC0210000 ); // disp cx
 
-	// cout << "hey" << endl;
-	vm.processInstruction( 0x510000FF ); // push
+	vm.processInstruction( 0xE1000001 ); // cx -> RAND(0, 100)
 
-	// cout << "hey" << endl;
-	vm.processInstruction( 0x43208000 ); // copy sp, cx
-	vm.processInstruction( 0x10200001 ); // add   1, cx
+//	vm.processInstruction( 0x510000FF ); // push 255
 
-	cout << "input string :\n-> " ;
-	vm.processInstruction( 0xF8200000 ); // input str
+//	vm.processInstruction( 0x43208000 ); // copy sp, cx
+//	vm.processInstruction( 0x10200001 ); // add   1, cx
+
+//	cout << "input string :\n-> " ;
+//	vm.processInstruction( 0xC8200000 ); // input str
 
 	 // vm.processInstruction( 0x51000061 ); // push a
 	 // vm.processInstruction( 0x51000062 ); // push b
@@ -36,10 +37,10 @@ int main( void )
 
 	// vm.processInstruction( 0xF4210000 ); // disp value at memory[cx] then disp "\n"
 
-	vm.dispMemoryStack();
+//	vm.dispMemoryStack();
 	
-	cout << "Printing string from memory stack : " << endl;
-	vm.processInstruction( 0xF3210000 ); // disp string starting at memory[cx], until NULL then disp "\n"
+//	cout << "Printing string from memory stack : " << endl;
+//	vm.processInstruction( 0xC3210000 ); // disp string starting at memory[cx], until NULL then disp "\n"
 	//dispFlagsRegister();
 
 	// dispMemoryStack();
