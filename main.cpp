@@ -1,5 +1,6 @@
 #include <iostream>
-#include "VM.h"
+#include "VirtualMachine/VM.h"
+#include "Assembleur/basm.h"
 
 using std::cout; 
 using std::endl;
@@ -7,27 +8,32 @@ using std::endl;
 
 int main( void )
 {
-	VM vm;
+	//VM vm;
 
-	vm.reg[bx] = 123;
+	//vm.reg[bx] = 123;
 
-	vm.initialize();
+	//vm.initialize();
 
-	vm.processInstruction( 0x51000020 );
-	vm.processInstruction( 0x510000FF );
+	//vm.processInstruction( 0x51000020 );
+	//vm.processInstruction( 0x510000FF );
 
-	vm.dispMemoryStack();
-	vm.processInstruction( 0x61000000 );
-	vm.processInstruction( 0x60500000 );
+	//vm.dispMemoryStack();
+	//vm.processInstruction( 0x61000000 );
+	//vm.processInstruction( 0x60500000 );
 
-	vm.dispMemoryStack();
-	vm.processInstruction( 0x50003000 );
+	//vm.dispMemoryStack();
+	//vm.processInstruction( 0x50003000 );
 
-	vm.dispMemoryStack();
-	vm.processInstruction( 0xD0000000 );
-	vm.processInstruction( 0xE00003E8 );
-	vm.processInstruction( 0x510000FF );
+	//vm.dispMemoryStack();
+	//vm.processInstruction( 0xD0000000 );
+	//vm.processInstruction( 0xE00003E8 );
+	//vm.processInstruction( 0x510000FF );
 
+
+
+	cpl::Compiler compiler;
+
+	compiler.compile( "Assembleur/asm/test.basm" );
 
 
 
