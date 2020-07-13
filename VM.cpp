@@ -105,17 +105,17 @@ uint16_t VM::xorshift16( void )
 //	|    OP Interpretation Functions    |
 //	+-----------------------------------+
 
+// TODO changed instruction encoding, CF basm parseAddBasedInstr() function
 // add a value (from a register or immediate) to a destination register
 // modify flags ZRO, NEG and POS
 void VM::executeAddBasedOP( uint32_t instruction, OP op )
 {
 	// 4 bits for sign and mod : 1bit of sign, 3bits of mode value
-	short mode		= ( instruction & 0x07000000 ) >> 24;	// mode of the instruction
-	bool  sign		= ( instruction & 0x08000000 ) >> 24;	// sign of the offset
+	short mode		= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
 	short dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register
-	short dest_off	= ( instruction & 0x000F0000 ) >> 16;	// destination offset
+	short dest_off	= ( instruction & 0x00070000 ) >> 16;	// destination offset
 	short src		= ( instruction & 0x0000F000 ) >> 12;	// source register
-	short src_off	= ( instruction & 0x00000F00 ) >>  8;	// source offset
+	short src_off	= ( instruction & 0x00000700 ) >>  8;	// source offset
 	int16_t value	= ( instruction & 0x0000FFFF );			// immediate value
 
 	// multiple dereferencement not possible eg: add 4(rsp), 5(rsp)
@@ -168,8 +168,6 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 			src_p	= &memory[ address ]; 
 			checkForSegfault( address ); break;
 	}
-	if( mode > 7 ) 
-		Error( "Unknown mode for instruction 'add'" );
 
 	if( src_p != NULL )
 		value = *src_p;
@@ -256,8 +254,8 @@ void VM::executePOP( uint32_t instruction )
 {
 	if( reg[sp] >= RESERVED_SPACE ) // check if there is something on the stack
 	{
-		uint16_t mode	= ( instruction & 0x00F00000 ) >> 20;	// mode of the instruction
-		uint16_t dest 	= ( instruction & 0x000F0000 ) >> 16;	// dest register
+		uint16_t mode	= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
+		uint16_t dest 	= ( instruction & 0x00F00000 ) >> 20;	// dest register
 		if( mode == 0 ) // if mode is at 0, save top value to a dest reg, otherwise just discard it
 		{
 			reg[dest] = memory[reg[sp]]; // mov top of stack in destination register
@@ -268,7 +266,8 @@ void VM::executePOP( uint32_t instruction )
 		Error("Stack is empty");
 }
 
-// Either act as a cout or a cin, either with a value or a string // TODO subject to change input -> sfml
+// Either act as a cout or a cin, either with a value or a string 
+// TODO : proper source dereferencement ! like addBasedOP
 void VM::executePROMPT( uint32_t instruction ) 
 {
 	uint16_t mode	= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
@@ -332,9 +331,6 @@ void VM::executeRAND( uint32_t instruction )
 	uint16_t mode		= ( instruction & 0x0F000000 ) >> 24;	// chose range 
 	uint16_t dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register	
 	uint16_t max_value	= ( instruction & 0x0000FFFF );			// choose max value
-
-	if( dest > 7 ) // do not allow for sp and ip to be randomized
-		Error("Cannot randomize such register");
 
 	if( mode == 0 )		  // no max value
 		reg[dest] = static_cast<int16_t>(xorshift16());

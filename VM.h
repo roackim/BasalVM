@@ -4,6 +4,7 @@
 // certains others instructions have been factorized inside a single instruction code
 // such as AND, OR, NOT and XOR, in order to make room for other instructions as only 4 bits are used for OP codes.
 
+#include <vector>
 
 #pragma once
 
@@ -32,18 +33,17 @@ enum OP
 	IO = 0,		//	.0			// used to communicate with outside the VM, not implemented yet
 	ADD,		// 	.1
 	SUB,		// 	.2
-	CMP,		// 	.3			// Comparison
-	COPY,		// 	.4
-	PUSH,		// 	.5
-	POP,		// 	.6			
-	MUL,		// 	.7			// Multiplication		ex :  MUL 5, ax			C : ax *= 5;
-	DIV,		// 	.8			// Division
-	MOD,		// 	.9			// Modulus
-	BIN,		// 	.10			// contains AND, OR, NOT and XOR
-	JUMP,		// 	.11			// contains CALL and RET 
-	PROMPT,		// 	.12			// act as both a cout and a cin depending on the mode
-	RAND,		//  .13
-	WAIT		//  .14			// implementation must depend on the context
+	COPY,		// 	.3
+	MUL,		// 	.4			// Multiplication		ex :  MUL 5, ax			C : ax *= 5;
+	DIV,		// 	.5			// Division
+	MOD,		// 	.6			// Modulus
+	BIN,		// 	.7			// contains AND, OR, NOT and XOR
+	PUSH,		// 	.8
+	POP,		// 	.9			
+	JUMP,		// 	.10			// contains CALL and RET 
+	PROMPT,		// 	.11			// act as both a cout and a cin depending on the mode
+	RAND,		//  .12
+	WAIT		//  .13			// implementation must depend on the context
 };
 
 //    -- CPU Flags --
@@ -73,8 +73,8 @@ private:
 	// array of word addresses  (16 bits offset)
 	// ~ amount to 130 ko of memory, no need for dynamic allocation
 	uint16_t memory[UINT16_MAX];	
-	// allow for ~ 32700 instructions per program.
-	uint32_t program[UINT16_MAX / 2];
+	// no program size limit, dinamic array for less memory impact on average
+	std::vector<uint32_t> program;
 	// amount of reserved space in memory ( maybe useful for later ? )
 	const uint16_t RESERVED_SPACE = 2;
 	// array containing the CPU flags, access like flags[ZRO]
@@ -82,11 +82,11 @@ private:
 	// used to generate random numbers
 	uint16_t rnd_seed;
 public:
-	// array containing the registers access like reg[r2]
+	// array containing the registers access like reg[r2], public so you can do : vm.reg[ax] = 238; in main()
 	uint16_t reg[ R_COUNT ];
 
-// All functions are public
 
+//    All functions are public
 //	+--------------------------+
 //	|    VM basic functions    |
 //	+--------------------------+
