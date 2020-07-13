@@ -47,31 +47,29 @@ namespace parser
 	}
 
 
-	bool isSpace( char c )
+	bool isSpace( const char& c )
 	{
 		if( c == ' ' or c == '\t' ) 
 			return true;
 		return false;
 	}
-
-
-	bool isNumber( char c )
+	bool isNumber( const char& c )
 	{
 		return( c >= '0' and c <= '9' );
 	}
-	bool isAlphaNumerical( char c ) 	{
+	bool isAlphaNumerical( const char& c ) 	{
 		return(( c >= 'a' and c <= 'z') or ( c >= 'A' and c <= 'Z' ) or ( c >= '0' and c <= '9'));
 	}
-	bool isAlpha( char c )
+	bool isAlpha( const char& c )
 	{
 		return(( c >= 'a' and c <= 'z') or ( c >= 'A' and c <= 'Z' ));
 	}
-	bool isHexa( char c )
+	bool isHexa( const char& c )
 	{
 		return( ( c >= '0' and c <= '9' ) or ( c >= 'A' and c <= 'F' ));
 	}
 
-	bool matchDecimalValue( string s )
+	bool matchDecimalValue( const string& s )
 	{
 		unsigned off = 0; // offset to start the loop approprietly ( skip special char at begining ex : -123 )
 
@@ -84,7 +82,7 @@ namespace parser
 		return true;
 				
 	}
-	bool matchHexaValue( string s )
+	bool matchHexaValue( const string& s )
 	{
 		unsigned off = 0;
 
@@ -98,7 +96,7 @@ namespace parser
 		return true;
 	}
 
-	bool matchBinValue( string s )
+	bool matchBinValue( const string& s )
 	{
 		unsigned off = 0;
 
@@ -112,7 +110,7 @@ namespace parser
 		return true;
 	}
 
-	bool matchLabelDecl( string s )
+	bool matchLabelDecl( const string& s )
 	{
 		unsigned off = 0;
 
@@ -126,7 +124,7 @@ namespace parser
 		return true;
 	}
 
-	bool matchLabel( string s )
+	bool matchLabel( const string& s )
 	{
 
 		if( not isAlpha( s[0] ) ) return false; // must start with [a-Z] 

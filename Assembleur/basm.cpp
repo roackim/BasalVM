@@ -113,9 +113,6 @@ namespace cpl
 		return 15;
 	}
 
-
-
-
 	// increment j and reassign token t
 	bool Compiler::readToken( void )
 	{
@@ -484,6 +481,9 @@ namespace cpl
 
 	}
 
+//		+----------------------+
+//		|  PARSE INSTRUCTIONS  |
+//		+----------------------+
 
 	// ADD, SUB, COPY, CMP, DIV, MUL, MOD
 	bool Compiler::parseAddBasedInstr( void )
@@ -495,14 +495,15 @@ namespace cpl
 		if     ( op == "add" ) instruction = 0x10000000;
 		else if( op == "sub" ) instruction = 0x20000000;
 		else if( op == "copy") instruction = 0x30000000;
-		else if( op == "mul" ) instruction = 0x40000000;
-		else if( op == "div" ) instruction = 0x50000000;
-		else if( op == "mod" ) instruction = 0x60000000;
+		else if( op == "cmp" ) instruction = 0x40000000;
+		else if( op == "mul" ) instruction = 0x50000000;
+		else if( op == "div" ) instruction = 0x60000000;
+		else if( op == "mod" ) instruction = 0x70000000;
 
 		readToken();
 
-		uint8_t l_mode = 0; // 0: immediate value | 1: address | 2: register | 3: dereferenced register
-		uint8_t r_mode = 0; // 0: this mode is not possible (destination operand), all other are possible
+		uint8_t l_mode   = 0; // 0: immediate value | 1: address | 2: register | 3: dereferenced register
+		uint8_t r_mode   = 0; // 0: this mode is not possible (destination operand), all other are possible
 		uint8_t l_offset = 0; // offset of left operand
 		uint8_t l_reg	 = 0; // register index of left operand
 		uint8_t r_offset = 0; // ..
@@ -590,16 +591,16 @@ namespace cpl
 	}
 
 	// TODO function body
-	// AND, OR, NOT, XOR
+	// opcode 8.  AND, OR, NOT, XOR
 	bool Compiler::parseBinBasedInstr( void )
 	{
 		return false;
 	}
 
-	// PUSH
+	// opcode 9, PUSH
 	bool Compiler::parsePushInstr( void )
 	{
-		uint32_t instruction = 0x80000000;
+		uint32_t instruction = 0x90000000;
 		readToken(); // skip push token
 		if( current.type == DECIMAL_VALUE or current.type == HEXA_VALUE or current.type == BINARY_VALUE )
 		{
@@ -623,10 +624,10 @@ namespace cpl
 		return true;
 	}
 
-	// POP
+	// opcode 10, POP
 	bool Compiler::parsePopInstr( void )
 	{
-		uint32_t instruction = 0x90000000;
+		uint32_t instruction = 0xA0000000;
 		readToken(); // skip pop token
 		token t = tokens[j];
 		if( current.type == REG ) // pop to a register
@@ -649,68 +650,18 @@ namespace cpl
 		return true;
 	}
 
-	// RAND
-	bool Compiler::parseRandInstr( void )
+	// TODO
+	// opcode 11, JUMP, CALL, RET
+	bool Compiler::parseJumpBasedInstr( void )
 	{
-		uint32_t instruction = 0xC0000000;
-		readToken(); // skip rand token
-
-		if( current.type == REG )
-		{
-			readToken();
-			if( current.type == COMMA ) // rand ax, 265     ax -> rand(0, 256)
-			{
-				instruction |= 0x02000000; // mode
-				readComma();
-				uint16_t max_value = parseValue();  // does not increment j (maybe it should ?)
-				instruction |= max_value;  // immediate value
-
-				readToken(); // skip immediate value, go to next token
-				program.push_back( instruction ); // store instruction
-				return true;
-			}
-			else if( tokens[ j ].type == ENDL ) // rand ax
-			{
-				program.push_back( instruction ); // store instruction
-				return true;
-			}
-			else
-				return compileError("junk after rand instruction, maybe a comma is missing between operands");
-		}
-		else
-			return compileError("expected register after rand instruction" );
-
 		return false;
 	}
 
-	// WAIT
-	bool Compiler::parseWaitInstr( void )
-	{
-		uint32_t instruction = 0xD0000000;
-		readToken(); // skip wait token
-		uint16_t time_value = parseValue();
-		instruction |= time_value;
-
-		bool comma = readComma();
-		if( current.type == TIME )
-		{
-			if( current.text == "ms" ) ;
-				// nothing to change in instruction ( mode == 0 )
-			else if( current.text == "s" )
-				instruction |= 0x01000000;
-			readToken(); // skip unit token
-			program.push_back( instruction );
-			return true and comma;
-		}
-		else
-			return compileError("Expected time units, either 'ms' or 's' operand");
-	}
-
 	// TODO  finish second operand for disp, do input
-	// INPUT, DISP
+	// opcode 12, INPUT, DISP
 	bool Compiler::parsePromptBasedInstr( void )
 	{
-		uint32_t instruction = 0xB0000000;
+		uint32_t instruction = 0xC0000000;
 		uint8_t l_mode = 0; // source  mode, 0: address | 1: reg | 2: dereferenced reg
 		uint8_t r_mode = 0;	// display mode, 0: char | 1: integer | 2: address ( unsigned int )
 		uint8_t reg	   = 0;
@@ -781,12 +732,64 @@ namespace cpl
 	return true;
 	}
 
-	// TODO
-	// JUMP, CALL, RET
-	bool Compiler::parseJumpBasedInstr( void )
+	// RAND
+	bool Compiler::parseRandInstr( void )
 	{
+		uint32_t instruction = 0xD0000000;
+		readToken(); // skip rand token
+
+		if( current.type == REG )
+		{
+			readToken();
+			if( current.type == COMMA ) // rand ax, 265     ax -> rand(0, 256)
+			{
+				instruction |= 0x02000000; // mode
+				readComma();
+				uint16_t max_value = parseValue();  // does not increment j (maybe it should ?)
+				instruction |= max_value;  // immediate value
+
+				readToken(); // skip immediate value, go to next token
+				program.push_back( instruction ); // store instruction
+				return true;
+			}
+			else if( tokens[ j ].type == ENDL ) // rand ax
+			{
+				program.push_back( instruction ); // store instruction
+				return true;
+			}
+			else
+				return compileError("junk after rand instruction, maybe a comma is missing between operands");
+		}
+		else
+			return compileError("expected register after rand instruction" );
+
 		return false;
 	}
+
+	// WAIT
+	bool Compiler::parseWaitInstr( void )
+	{
+		uint32_t instruction = 0xE0000000;
+		readToken(); // skip wait token
+		uint16_t time_value = parseValue();
+		instruction |= time_value;
+
+		bool comma = readComma();
+		if( current.type == TIME )
+		{
+			if( current.text == "ms" ) ;
+				// nothing to change in instruction ( mode == 0 )
+			else if( current.text == "s" )
+				instruction |= 0x01000000;
+			readToken(); // skip unit token
+			program.push_back( instruction );
+			return true and comma;
+		}
+		else
+			return compileError("Expected time units, either 'ms' or 's' operand");
+	}
+
+
 }
 
 // usage
