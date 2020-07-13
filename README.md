@@ -18,27 +18,33 @@ Instructions are not case-sensitive, although registers, and CPU flags are.
 ~~ TODO define explicitly every syntax and functionnality
 
 
-registers:
+Registers:
 
-	ax, bx, cx, dx, ex, fx, si, di, sp, ip
-	[ax-fx] are genral purpose registers
-	si and di respectively stands for source index and destination index 
-	sp stands for stack pointer
-	ip stand for instruction pointer
+	ax   |
+	bx	 |
+	cx	 |> General purpose registers
+	dx	 |
+	ex	 |
+	fx	 |
+	si	 -> Source Index register  
+	di	 -> Destination Index register
+	sp	 -> Stack Pointer register
+	ip	 -> Instruction Pointer register
+
+Instructions:
+	
+	add, sub, copy, cmp, mul, div, mod, bin, push, pop, jump, prompt, rand, wait		
+
+	~~ Todo: detail every instructions
 
 CPU flags:
 
-	mainly used after a cmp instruction
+	mainly used after a cmp instruction, 
 
-	EQU : true if both operands are equals
-	ZRO : true if the result of the comparison ( substraction ) is 0, virtually equal to EQU flag.
-	POS : true if the result of the comparison is positive
-	NEG : true if the result of the comparison is negative
-	OVF : true if the result of an instruction overflowed or underflowed the destination.
-	ODD : true if the result of an instruction is odd
+	EQU, ZRO, POS, NEG, OVF, ODD
 
 
-examples :
+Examples :
 
 	! this BASM programm displays the first 10 iteration of the fibonacci sequence
 
