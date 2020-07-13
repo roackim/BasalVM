@@ -113,8 +113,10 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 	// 4 bits for sign and mod : 1bit of sign, 3bits of mode value
 	short mode		= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
 	short dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register
+	bool  dest_sign = ( instruction & 0x00080000 ) >> 19;	// destination offset sign
 	short dest_off	= ( instruction & 0x00070000 ) >> 16;	// destination offset
 	short src		= ( instruction & 0x0000F000 ) >> 12;	// source register
+	bool  src_sign  = ( instruction & 0x00000800 ) >> 11;	// source offset sign
 	short src_off	= ( instruction & 0x00000700 ) >>  8;	// source offset
 	int16_t value	= ( instruction & 0x0000FFFF );			// immediate value
 
@@ -136,7 +138,7 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 			checkForSegfault( address ); break;
 
 		case 2:	// add	3, 4(r7)
-			address = reg[dest] + coef(sign) * dest_off;
+			address = reg[dest] + coef(dest_sign) * dest_off;
 			dest_p	= &memory[ address ] ; 
 			checkForSegfault( address ); break;
 			
@@ -151,7 +153,7 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 			checkForSegfault( address ); break;
 
 		case 5:	// add	r1, 4(r7)
-			address = reg[dest] + coef(sign) * dest_off;
+			address = reg[dest] + coef(dest_sign) * dest_off;
 			dest_p	= &memory[ address ] ; 
 			src_p	= &reg[src]; 
 			checkForSegfault( address ); break;
@@ -164,7 +166,7 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 
 		case 7:	// add	4(r1), r7
 			dest_p	= &reg[dest]; 
-			address = reg[src] + coef(sign) * src_off;
+			address = reg[src] + coef(src_sign) * src_off;
 			src_p	= &memory[ address ]; 
 			checkForSegfault( address ); break;
 	}

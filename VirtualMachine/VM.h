@@ -31,19 +31,20 @@ enum Reg
 enum OP				
 {
 	IO = 0,		//	.0			// used to communicate with outside the VM, not implemented yet
-	ADD,		// 	.1
-	SUB,		// 	.2
-	COPY,		// 	.3
-	MUL,		// 	.4			// Multiplication		ex :  MUL 5, ax			C : ax *= 5;
-	DIV,		// 	.5			// Division
-	MOD,		// 	.6			// Modulus
-	BIN,		// 	.7			// contains AND, OR, NOT and XOR
-	PUSH,		// 	.8
-	POP,		// 	.9			
-	JUMP,		// 	.10			// contains CALL and RET 
-	PROMPT,		// 	.11			// act as both a cout and a cin depending on the mode
-	RAND,		//  .12
-	WAIT		//  .13			// implementation must depend on the context
+	ADD,		// 	.1			// Addition
+	SUB,		// 	.2			// Substraction
+	COPY,		// 	.3			// Copy
+	CMP,		//  .4			// Comparison
+	MUL,		// 	.5			// Multiplication		ex :  MUL 5, ax			C : ax *= 5;
+	DIV,		// 	.6			// Division
+	MOD,		// 	.7			// Modulus
+	BIN,		// 	.8			// contains AND, OR, NOT and XOR
+	PUSH,		// 	.9
+	POP,		// 	.10			
+	JUMP,		// 	.11			// contains CALL and RET 
+	PROMPT,		// 	.12			// act as both a cout and a cin depending on the mode
+	RAND,		//  .13
+	WAIT		//  .14			// implementation must depend on the context
 };
 
 //    -- CPU Flags --
