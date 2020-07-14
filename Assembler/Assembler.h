@@ -127,7 +127,7 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 		bool parseWaitInstr( void );
 
 		// INPUT, DISP
-		bool parsePromptBasedInstr( void );
+		bool parseDispInstr( void );
 
 		// JUMP, CALL, RET
 		bool parseJumpBasedInstr( void );

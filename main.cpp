@@ -20,7 +20,7 @@ int main( void )
 	{
 		cout << std::hex << std::uppercase << basm.program[i] << endl;
 	}
-	cout << endl;
+	cout << " - ok - " << endl;
 	
 	// Instanciate Virtual Machine
 	VM vm;
