@@ -10,7 +10,8 @@ using std::cerr;
 using std::endl;
 
 
-namespace cpl // keep things contained 
+		
+namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 {
 	enum Type	// types of tokens
 	{
@@ -57,7 +58,7 @@ namespace cpl // keep things contained
 	// get register index
 	uint8_t getRegInd( string reg ); 
 
-	class Compiler
+	class Assembler
 	{
 	public:
 		uint64_t rsp = 0;						// pointer to next instructions while compiling, increment every time an instruction is parsed
@@ -101,8 +102,8 @@ namespace cpl // keep things contained
 		// load a file and tokenize it
 		void loadAndTokenize( string fileName );
 
-		// compile
-		void compile( string fileName );
+		// assemble instructions
+		void assemble( string fileName );
 
 		// look at a token and redirect toward the appropriatre function, eg : ADD -> call parseAddBasedInstr()		
 		bool parseOneInstr( void );

@@ -3,6 +3,7 @@
 #include <time.h> // used for seeding PRNG with entropy
 #include <chrono> // used for cross platform sleep call
 #include <thread>
+#include <vector>
 
 #include "misc.hpp"
 #include "VM.h"
@@ -39,9 +40,26 @@ void VM::initialize( void )
 	reg[sp] = RESERVED_SPACE-1; // save space for flags
 	reg[ip] = 0;
 
+	program.clear();	 // clear current program
+
 	srand(time(NULL));
 	rnd_seed = rand();	 // seed the xorshift PRNG
 }
+
+// load instructions in program vector from another vector (passed by the compiler)
+void VM::load( std::vector<uint32_t> instructionArray )
+{
+	program = instructionArray; // should copy every element from the vector, works differently than standard array pointer
+}
+
+	// execute the program
+	void VM::executeProgram( void )
+	{
+		for( unsigned i=0; i<program.size(); i++ )
+		{
+			processInstruction( program[i] );
+		}
+	}
 
 // display the stack values
 void VM::dispMemoryStack( bool showReserved )
@@ -115,115 +133,113 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 	short dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register
 	bool  dest_sign = ( instruction & 0x00080000 ) >> 19;	// destination offset sign
 	short dest_off	= ( instruction & 0x00070000 ) >> 16;	// destination offset
-	short src		= ( instruction & 0x0000F000 ) >> 12;	// source register
-	bool  src_sign  = ( instruction & 0x00000800 ) >> 11;	// source offset sign
-	short src_off	= ( instruction & 0x00000700 ) >>  8;	// source offset
-	int16_t value	= ( instruction & 0x0000FFFF );			// immediate value
+	short src		= ( instruction & 0x000000F0 ) >>  4;	// source register
+	bool  src_sign  = ( instruction & 0x00000008 ) >>  0;	// source offset sign
+	short src_off	= ( instruction & 0x00000007 ) >>  0;	// source offset
+	short src_value	= ( instruction & 0x0000FFFF );			// immediate value or address
+	short dest_value= ( instruction & 0x00FFFF00 ) >>  8;	// immediate address
+
+	
+
+	
+	short l_mode = mode >> 2;
+	short r_mode = mode & 0b0011;
 
 	// multiple dereferencement not possible eg: add 4(rsp), 5(rsp)
-	// like a real assembly
+	// like a real assembly, but there are no limitations to enfore this other than a if statement in Assembler.cpp
 	
 	uint16_t* dest_p = NULL;
-	uint16_t* src_p  = NULL; // if still null after the switch, use the imediate value instead
-	uint16_t address = 0;
+	uint16_t* src_p  = NULL;	// if still null after the switch, use the imediate value instead
+	uint16_t address = 0;		// used in case of dereferencement
 
-	switch( mode ) // only check for segfault when dereferencing 
-	{			// example with a few values and registers
-		case 0:	// add  3, rsp
+	switch( l_mode ) // src
+	{
+		case 0:		// immediate value 
+					// do nothing : if src_p is null after switch statement, use l_value
+			break;	
+		case 1:		// immediate address 
+			address = src_value;
+			src_p = &memory[ address ];
+			checkForSegfault( address ); break; 
+
+		case 2:		// register
+			src_p = &reg[dest]; break;
+
+		case 3:		// dereferenced register
+			address = reg[src] + coef(src_sign) * src_off; 	
+			src_p = &memory[ address ];
+			checkForSegfault( address ); break;
+	}
+	switch( r_mode )
+	{
+		case 0:		// immediate value
+			Error("Cannot use immediate value as a destination"); break;
+		case 1:		// immediate address
+			address = dest_value;
+			dest_p = &memory[ address ];
+			checkForSegfault( address ); break; 
+
+		case 2:		// register
 			dest_p = &reg[dest]; break;
-			
-		case 1:	// add	3, (r7)
-			address = reg[dest];
-			dest_p	= &memory[ address ];
-			checkForSegfault( address ); break;
 
-		case 2:	// add	3, 4(r7)
-			address = reg[dest] + coef(dest_sign) * dest_off;
-			dest_p	= &memory[ address ] ; 
-			checkForSegfault( address ); break;
-			
-		case 3: // add	r1, r7
-			dest_p = &reg[dest];
-			src_p  = &reg[src]; break;
-
-		case 4:	// add	r1, (r7)
-			address = reg[dest];
-			dest_p	= &memory[ address ];
-			src_p	= &reg[src];
-			checkForSegfault( address ); break;
-
-		case 5:	// add	r1, 4(r7)
-			address = reg[dest] + coef(dest_sign) * dest_off;
-			dest_p	= &memory[ address ] ; 
-			src_p	= &reg[src]; 
-			checkForSegfault( address ); break;
-
-		case 6: // add	(r1), r7
-			dest_p	= &reg[dest];
-			address = reg[src];
-			src_p	= &memory[ address ]; 
-			checkForSegfault( address ); break;
-
-		case 7:	// add	4(r1), r7
-			dest_p	= &reg[dest]; 
-			address = reg[src] + coef(src_sign) * src_off;
-			src_p	= &memory[ address ]; 
+		case 3:		// dereferenced register
+			address = reg[dest] + coef(dest_sign) * dest_off; 	
+			dest_p = &memory[ address ];
 			checkForSegfault( address ); break;
 	}
 
-	if( src_p != NULL )
-		value = *src_p;
-	
+	if( src_p  != NULL )		// not an immediate value 
+		src_value = *src_p;		// -> put the actual source value inside src_value
+								// this avoid different case.
 	switch( op )
 	{
 		case ADD :
-			updateAddOverflow( *dest_p, value );
-			*dest_p += value;
+			updateAddOverflow( *dest_p, src_value );
+			*dest_p += src_value;
 			updateFlags( *dest_p ); break;
 
 		case SUB:
-			updateSubOverflow( *dest_p, value );
-			*dest_p -= value;
+			updateSubOverflow( *dest_p, src_value );
+			*dest_p -= src_value;
 			updateFlags( *dest_p ); break;
 
 		case COPY:
-			*dest_p = value;
+			*dest_p = src_value;
 			updateFlags( *dest_p ); break;
 
-		case CMP:
-			if( static_cast<int16_t>(*dest_p) < 0 and value > 0 ) // avoid overflow
+		case CMP: // not very clean, should rewrite a function doing the addition on 32 bits, like done for MUL.
+			if( static_cast<int16_t>(*dest_p) < 0 and src_value > 0 ) // avoid overflow
 			{
 				flags[POS] = 0;
 				flags[NEG] = 1;
 			}
-			else if( static_cast<int16_t>(*dest_p) > 0 and value < 0 )
+			else if( static_cast<int16_t>(*dest_p) > 0 and src_value < 0 )
 			{
 				flags[POS] = 1;
 				flags[NEG] = 0;	
 			}
 			else // no overflow possible left, substract normally
 			{	// process result in a local variable, in order to preserve destination 
-				uint16_t result = *dest_p - value;
+				uint16_t result = *dest_p - src_value;
 				updateFlags( result );
 			}
 			break;
 
 		case MUL:
-			updateMulOverflow( *dest_p, value );
-			*dest_p *= value;
+			updateMulOverflow( *dest_p, src_value );
+			*dest_p *= src_value;
 			updateFlags( *dest_p ); break;
 
 		case DIV:
-			*dest_p /= value;
+			*dest_p /= src_value;
 			updateFlags( *dest_p ); break;
 
 		case MOD:
-			*dest_p %= value;
+			*dest_p %= src_value;
 			updateFlags( *dest_p ); break;
 
 		default:
 			Error("Unexpected OP code");
-
 	}
 }
 

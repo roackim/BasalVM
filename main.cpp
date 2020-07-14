@@ -1,6 +1,6 @@
 #include <iostream>
 #include "VirtualMachine/VM.h"
-#include "Assembleur/basm.h"
+#include "Assembler/Assembler.h"
 
 using std::cout; 
 using std::endl;
@@ -8,32 +8,26 @@ using std::endl;
 
 int main( void )
 {
-	//VM vm;
-
-	//vm.reg[bx] = 123;
-
-	//vm.initialize();
-
-	//vm.processInstruction( 0x51000020 );
-	//vm.processInstruction( 0x510000FF );
-
-	//vm.dispMemoryStack();
-	//vm.processInstruction( 0x61000000 );
-	//vm.processInstruction( 0x60500000 );
-
-	//vm.dispMemoryStack();
-	//vm.processInstruction( 0x50003000 );
-
-	//vm.dispMemoryStack();
-	//vm.processInstruction( 0xD0000000 );
-	//vm.processInstruction( 0xE00003E8 );
-	//vm.processInstruction( 0x510000FF );
 
 
+	// Instanciate Assambler, assemble instructions
+	Asm::Assembler basm;
+	basm.assemble( "program.basm" );
+	
+	// For Debugging purposes
+	cout << "\n - assembler -" << endl;
+	for( unsigned i=0; i<basm.program.size(); i++)
+	{
+		cout << std::hex << std::uppercase << basm.program[i] << endl;
+	}
+	cout << endl;
+	
+	// Instanciate Virtual Machine
+	VM vm;
+	vm.initialize();
+	vm.load( basm.program );
 
-	cpl::Compiler compiler;
-
-	compiler.compile( "Assembleur/asm/test.basm" );
+	vm.executeProgram();
 
 
 

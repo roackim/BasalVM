@@ -95,6 +95,12 @@ public:
 	// initialize registers to 0, initialize the seed for random numbers
 	void initialize( void );
 
+	// load instructions in program vector from another vector (passed by the compiler)
+	void load( std::vector<uint32_t> instructionArray );
+
+	// execute the program
+	void executeProgram( void );
+
 	// display the stack values
 	void dispMemoryStack( bool showReserved = false );
 	

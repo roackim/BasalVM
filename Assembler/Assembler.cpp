@@ -1,15 +1,15 @@
 #include <iterator>
 #include <fstream>
 #include <cmath>
-#include "basm.h"
+#include "Assembler.h"
 #include "parser.h"
 
 
-namespace cpl
+namespace Asm
 {
 
 	// better error message for compilation
-	bool Compiler::compileError( std::string message )
+	bool Assembler::compileError( std::string message )
 	{
 
 		std::cerr << "\n/!\\ Error line " << lineNbr << ": " << message << "." << endl;
@@ -114,7 +114,7 @@ namespace cpl
 	}
 
 	// increment j and reassign token t
-	bool Compiler::readToken( void )
+	bool Assembler::readToken( void )
 	{
 		if( j < tokens.size() - 2 )
 		{	
@@ -129,7 +129,7 @@ namespace cpl
 	}
 
 	// parse decimals, binary and hexadecimal value, return a uint16 encoded value, and call readToken()
-	uint16_t Compiler::parseValue( void )
+	uint16_t Assembler::parseValue( void )
 	{
 		string value = current.text;
 		if( current.type == DECIMAL_VALUE )
@@ -169,11 +169,10 @@ namespace cpl
 		}
 		compileError( "Expected a value" );
 		return 0;
-
 	}
 
 	// curent token must be a ENDL, compileError and return false otherwise
-	bool Compiler::readEndl( void )
+	bool Assembler::readEndl( void )
 	{
 		if( current.type == ENDL )
 		{
@@ -189,7 +188,7 @@ namespace cpl
 	}
 
 	// current token must be a comma, compileError and return false otherwise
-	bool Compiler::readComma( void )
+	bool Assembler::readComma( void )
 	{
 		if( tokens[ j ].type == COMMA )
 		{
@@ -204,9 +203,8 @@ namespace cpl
 	}
 
 
-
 	// match regex with string to find corresponding Type, and pakc both type and Txt in a token object.
-	token Compiler::tokenize( string txt )
+	token Assembler::tokenize( string txt )
 	{
 		Type type = UNKNOWN;
 		if     ( txt == "," ) type = COMMA;
@@ -233,7 +231,7 @@ namespace cpl
 	}
 
 	// split a string with a delimiter 
-	string Compiler::removeSpace( string line )
+	string Assembler::removeSpace( string line )
 	{
 		char del = '|';
 		string delstr ; delstr += del; // used to compare txt to del 
@@ -298,7 +296,7 @@ namespace cpl
 	}
 
 	// get one token from a string already split // called by loadAndTokenize
-	bool Compiler::getOneToken( string& line )  
+	bool Assembler::getOneToken( string& line )  
 	{
 		if( line == "" )
 			return false;
@@ -317,7 +315,7 @@ namespace cpl
 	}
 
 	// load a file and tokenize it
-	void Compiler::loadAndTokenize( string fileName )
+	void Assembler::loadAndTokenize( string fileName )
 	{
 		token first_token(";", ENDL); 
 		tokens.push_back( first_token );
@@ -339,8 +337,8 @@ namespace cpl
 		tokens.push_back( last_token );
 	}
 
-	// compile the target basm file
-	void Compiler::compile( string fileName )
+	// assemble instructions from the target basm file
+	void Assembler::assemble( string fileName )
 	{
 		rsp = 0;					 // isntruction count, used for LABEL_DECL
 		loadAndTokenize( fileName ); // we can now use tokens
@@ -358,11 +356,10 @@ namespace cpl
 		}
 		else
 			cout << "Warning : No instruction found" << endl;
-
 	}
 
 	// parse one instruction from the token array
-	bool Compiler::parseOneInstr( void )
+	bool Assembler::parseOneInstr( void )
 	{
 		if( current.text == "" ) // skip empty tokens. (might happens when using tabs mixed )
 		{
@@ -426,7 +423,7 @@ namespace cpl
 	}
 
 	// helper function
-	bool Compiler::checkForDereferencement( void )
+	bool Assembler::checkForDereferencement( void )
 	{
 		if( current.type == DECIMAL_VALUE and tokens[ j + 1 ].type == LPAREN )
 			return true;
@@ -437,7 +434,7 @@ namespace cpl
 
 
 	// helper function
-	bool Compiler::readDereferencedReg( uint8_t& offset, uint8_t& reg )
+	bool Assembler::readDereferencedReg( uint8_t& offset, uint8_t& reg )
 	{
 		offset = 0; // no offset by default
 
@@ -450,11 +447,12 @@ namespace cpl
 				compileError( "Value '" + current.text + "' is too big to be encoded, offsets range is [0-7]" );
 			readToken();
 
-			uint8_t v = std::abs( i );
+			uint8_t v = std::abs( i ); 
 			v &= 0b0111;
-			if( i < 0 ) v |= 0b1000;
+			if( i < 0 ) v |= 0b1000; // first bit -> sign
 
-			offset = static_cast<uint16_t>( v );
+			// offset = static_cast<uint16_t>( v ); // why the cast ?
+			offset = v; // seems simpler
 		}
 		// read register inside parenthesis
 		if( current.type == LPAREN )
@@ -478,7 +476,6 @@ namespace cpl
 		else
 			return compileError("Opening parenthesis expected");
 		return false;
-
 	}
 
 //		+----------------------+
@@ -486,9 +483,9 @@ namespace cpl
 //		+----------------------+
 
 	// ADD, SUB, COPY, CMP, DIV, MUL, MOD
-	bool Compiler::parseAddBasedInstr( void )
+	bool Assembler::parseAddBasedInstr( void )
 	{
-		uint32_t instruction = 0x10000000;
+		uint32_t instruction = 0x00000000;
 
 		// Compute OP Code
 		string op = parser::to_lower( current.text );
@@ -525,18 +522,15 @@ namespace cpl
 			readToken();
 			readComma();
 			l_mode = 2;
-			instruction |= l_reg << 12;
-			instruction |= l_reg << 20;
+			instruction |= l_reg << 4;
 
-		} //
+		} // left operand is a dereferenced register
 		else if( checkForDereferencement() )
 		{
 			readDereferencedReg( l_offset, l_reg );
 			readComma();
-			instruction |= l_reg    << 12;
-			instruction |= l_offset <<  8;
-			instruction |= l_reg    << 20;
-			instruction |= l_offset << 16;
+			instruction |= l_reg    << 4;
+			instruction |= l_offset << 0;
 			l_mode = 3;
 		} // branch on immediate value as left operand ex:	add 123, cx
 		else if( current.type == DECIMAL_VALUE or current.type == HEXA_VALUE or current.type == BINARY_VALUE )
@@ -557,8 +551,8 @@ namespace cpl
 			readToken();							// skip @ token
 			uint16_t dest_address = parseValue();	// expect a value after @ symbol
 			r_mode = 1;
-			instruction &= 0xFFFF0000;
-			instruction |= dest_address;				// last 4 bits are immediate address
+			instruction &= 0xFF0000FF;
+			instruction |= dest_address << 8;				// immediate address 
 			// compatibility problems ex: add 0xFF, @123
 			if( l_mode == 0 )
 				return compileError("Cannot use immediate value, with an immediate address in the same instruction");
@@ -574,7 +568,7 @@ namespace cpl
 		} // branch on dereferenced register as right operand ex: add 45, (dx) 
 		else if( checkForDereferencement() )
 		{
-			if( l_mode == 3 )
+			if( l_mode == 3 ) // took this from assembly, but no real limitation force this. Might be subject to change.
 				return compileError("Cannot use two dereferencement in the same instruction");
 			readDereferencedReg( r_offset, r_reg );
 			instruction |= r_reg    << 20;
@@ -592,13 +586,13 @@ namespace cpl
 
 	// TODO function body
 	// opcode 8.  AND, OR, NOT, XOR
-	bool Compiler::parseBinBasedInstr( void )
+	bool Assembler::parseBinBasedInstr( void )
 	{
 		return false;
 	}
 
 	// opcode 9, PUSH
-	bool Compiler::parsePushInstr( void )
+	bool Assembler::parsePushInstr( void )
 	{
 		uint32_t instruction = 0x90000000;
 		readToken(); // skip push token
@@ -625,7 +619,7 @@ namespace cpl
 	}
 
 	// opcode 10, POP
-	bool Compiler::parsePopInstr( void )
+	bool Assembler::parsePopInstr( void )
 	{
 		uint32_t instruction = 0xA0000000;
 		readToken(); // skip pop token
@@ -652,14 +646,14 @@ namespace cpl
 
 	// TODO
 	// opcode 11, JUMP, CALL, RET
-	bool Compiler::parseJumpBasedInstr( void )
+	bool Assembler::parseJumpBasedInstr( void )
 	{
 		return false;
 	}
 
 	// TODO  finish second operand for disp, do input
 	// opcode 12, INPUT, DISP
-	bool Compiler::parsePromptBasedInstr( void )
+	bool Assembler::parsePromptBasedInstr( void )
 	{
 		uint32_t instruction = 0xC0000000;
 		uint8_t l_mode = 0; // source  mode, 0: address | 1: reg | 2: dereferenced reg
@@ -732,8 +726,8 @@ namespace cpl
 	return true;
 	}
 
-	// RAND
-	bool Compiler::parseRandInstr( void )
+	// opcode 13, RAND
+	bool Assembler::parseRandInstr( void )
 	{
 		uint32_t instruction = 0xD0000000;
 		readToken(); // skip rand token
@@ -766,8 +760,8 @@ namespace cpl
 		return false;
 	}
 
-	// WAIT
-	bool Compiler::parseWaitInstr( void )
+	// opcode 14, WAIT
+	bool Assembler::parseWaitInstr( void )
 	{
 		uint32_t instruction = 0xE0000000;
 		readToken(); // skip wait token
@@ -793,7 +787,7 @@ namespace cpl
 }
 
 // usage
-// cpl::Compiler compiler;
+// cpl::Assembler compiler;
 
 // compiler.compile( "asm/test.basm" );
 
