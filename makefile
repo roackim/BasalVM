@@ -12,9 +12,11 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
 CPPFLAGS ?= -fmax-errors=2 -Wall -Wextra -Wpedantic
 
+# linking files
 $(BIN_DIR)/$(TARGET_EXEC): $(OBJS)
+	@echo Linking object files..
 	@$(MKDIR_P) $(dir $@)
-	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+	@$(CXX) $(OBJS) -o $@ $(LDFLAGS)
 	@echo -e "Done."
 
 # c++ source

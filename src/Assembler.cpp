@@ -741,7 +741,7 @@ namespace Asm
 			return compileError("Expected Display type, not '" + current.text + "'" );
 
 
-		if( r_mode == 3 )
+		if( r_mode == 5 )
 		{
 			if( l_mode == 0 )
 				return compileError("Cannot display immediate value as str, use char instead");
@@ -784,8 +784,11 @@ namespace Asm
 				else if( current.text == "mem" ) r_mode = 2;
 				else if( current.text == "hex" ) r_mode = 3;
 				else if( current.text == "bin" ) r_mode = 4;
-				else if( current.text == "str" ) r_mode = 5;
+				else if( current.text == "str" )
+				{ 
+					r_mode = 5;
 					return compileError("Cannot use string input with a register");
+				}
 				readToken();
 			}
 			else
