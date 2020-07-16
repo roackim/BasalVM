@@ -1,22 +1,31 @@
+TARGET_EXEC ?= main
 
-appname := main
+BIN_DIR ?= ./bin
+BUILD_DIR ?= ./objects
+SRC_DIRS ?= ./src
 
-#LIBS= -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
-LIBS=
-CXXFLAGS= -fmax-errors=2 -Wall -Wextra -Wpedantic
+CXX=g++
 
-srcfiles := $(shell find . -name "*.cpp")
-objects  := $(patsubst %.cpp, %.o, $(srcfiles))
+SRCS := $(shell find $(SRC_DIRS) -name *.cpp)
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
-all: $(appname)
 
-$(appname): $(objects)
-	g++ $(CXXFLAGS) $(LIBS) -o $(appname) $(objects)
+CPPFLAGS ?= -fmax-errors=2 -Wall -Wextra -Wpedantic
+
+$(BIN_DIR)/$(TARGET_EXEC): $(OBJS)
+	@$(MKDIR_P) $(dir $@)
+	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+	@echo -e "Done."
+
+# c++ source
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	@$(MKDIR_P) $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+
+.PHONY: clean
 
 clean:
-	rm -f $(objects)
+	$(RM) -r $(BUILD_DIR)
 
-dist-clean: clean
-	rm -f *~ .depend
-
-include .depend
+MKDIR_P ?= mkdir -p
