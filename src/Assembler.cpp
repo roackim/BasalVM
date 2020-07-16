@@ -521,7 +521,7 @@ namespace Asm
 		uint8_t r_offset = 0; // ..
 		uint8_t r_reg	 = 0; // ..
 
-		// branch on address as left operand ex:	add @150, 34
+		// branch on address as left operand ex: add @150, 34
 		if( current.type == AROBASE )
 		{
 			readToken();							// skip @ token
@@ -530,7 +530,7 @@ namespace Asm
 
 			l_mode = 1;
 			instruction |= src_address;				// last 4 bits are immediate address
-		} // branch on register as left operand ex:			add cx, ax
+		} // branch on register as left operand ex:	add cx, ax
 		else if( current.type == REG )
 		{
 			l_reg = getRegInd( current.text );	
@@ -668,7 +668,7 @@ namespace Asm
 		return false;
 	}
 
-	// TODO  finish second operand for disp, do input
+	// TODO do input
 	// opcode 12, DISP, INPUT
 	bool Assembler::parsePromptInstr( void )
 	{

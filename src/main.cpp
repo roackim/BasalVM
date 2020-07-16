@@ -16,21 +16,23 @@ int main( int argc, char *argv[] )
 		return 1;
 	}
 
+	string file = argv[1];
+	
 	// Instanciate Assambler, assemble instructions
 	Asm::Assembler basm;
-	bool s = basm.assemble( "program.basm" );
+	bool s = basm.assemble( file );
 	if( s == false )
 	{
 		exit( -1 );
 	}
 	
 	// For Debugging purposes
-	cout << "\nAssembled :" << endl;
-	for( unsigned i=0; i<basm.program.size(); i++)
-	{
-		cout << "\t" << std::hex << std::uppercase << basm.program[i] << endl;
-	}
-	cout << endl;
+	// cout << "\nAssembled :" << endl;
+	// for( unsigned i=0; i<basm.program.size(); i++)
+	// {
+	// 	cout << "\t" << std::hex << std::uppercase << basm.program[i] << endl;
+	// }
+	// cout << endl;
 	
 	// Instanciate Virtual Machine
 	VM vm;
@@ -38,6 +40,7 @@ int main( int argc, char *argv[] )
 	vm.load( basm.program );
 
 	vm.executeProgram();
+	cout << vm.reg[ax] << endl;
 
 
 
