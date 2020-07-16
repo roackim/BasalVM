@@ -123,7 +123,6 @@ uint16_t VM::xorshift16( void )
 //	|    OP Interpretation Functions    |
 //	+-----------------------------------+
 
-// TODO changed instruction encoding, CF basm parseAddBasedInstr() function
 // add a value (from a register or immediate) to a destination register
 // modify flags ZRO, NEG and POS
 void VM::executeAddBasedOP( uint32_t instruction, OP op )
@@ -456,8 +455,7 @@ void VM::dispFlagsRegister( void )
 	cout << "│ \n" << "└─────┴─────┴─────┴─────┴─────┴─────┘" << endl;
 }
 
-// update every flag except Overflow since it needs operands value. Special case for EQU and ZRO see below
-// sub_or_cmp : false for sub (ZRO flag) and true for cmp (EQU flag)
+// update every flag except Overflow since it needs operands value.  ZRO and EQU flags are identical in practice.
 void VM::updateFlags( int16_t value, bool cmp )
 {
 	flags[NEG] = 0;

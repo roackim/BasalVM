@@ -41,8 +41,8 @@ int main( int argc, char *argv[] )
 	vm.load( basm.program );
 
 	vm.executeProgram();
-	cout << vm.reg[ax] << endl;
 
+	vm.dispMemoryStack();
 
 
 	return 0;
