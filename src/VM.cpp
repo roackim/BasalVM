@@ -53,7 +53,7 @@ void VM::load( std::vector<uint32_t> instructionArray )
 }
 
 // execute the program
-void VM::executeProgram( void )
+void VM::start( void )
 {
 	for( unsigned i=0; i<program.size(); i++ )
 	{
@@ -64,25 +64,28 @@ void VM::executeProgram( void )
 // display the stack values
 void VM::dispMemoryStack( bool showReserved )
 {
-	cout << "┌────────────────────┐\n│ -- Memory Stack    │" << endl;
+	cout << "\n┌────────────────────┐\n│ -- Memory Stack    │" << endl;
 
-	for( int i = reg[sp]; i >= RESERVED_SPACE; i-- )
+	for( unsigned i = reg[sp]; i >= RESERVED_SPACE; i-- )
 	{
 		int16_t value = static_cast<int16_t>(memory[i]);
-		int s = 11 - std::to_string( value ).length(); 
+		unsigned s = 11 - std::to_string( value ).length(); 
+
 		cout << "│ " << i << "\t";
-		for( int j=0; j<s; j++ ) // align numbers on the right
+
+		for( unsigned j=0; j<s; j++ ) // align numbers on the right
 		{
 			cout << " ";
 		}
+
 		cout << value << "  │" << endl;
 	}
 
 	cout << "│ -- Reserved Memory │" << endl;
 	if( showReserved )
 	{
-			for( int i = RESERVED_SPACE-1; i >= 0; i-- )
-			{
+		for( int i = RESERVED_SPACE-1; i >= 0; i-- )
+		{
 			int16_t value = static_cast<int16_t>(memory[i]);
 			int s = 11 - std::to_string( value ).length(); 
 			cout << "│ " << i << "\t";
@@ -123,6 +126,8 @@ uint16_t VM::xorshift16( void )
 //	|    OP Interpretation Functions    |
 //	+-----------------------------------+
 
+// Macro Function : ADD, SUB. CMP, COPY, MUL, DIV and MOD
+// theses intrcutions are fatorized because they function strictly the same and are encoded identically by the assembler.
 // add a value (from a register or immediate) to a destination register
 // modify flags ZRO, NEG and POS
 void VM::executeAddBasedOP( uint32_t instruction, OP op )
@@ -137,9 +142,6 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 	short src_off	= ( instruction & 0x00000007 ) >>  0;	// source offset
 	short src_value	= ( instruction & 0x0000FFFF );			// immediate value or address
 	short dest_value= ( instruction & 0x00FFFF00 ) >>  8;	// immediate address
-
-	
-
 	
 	short l_mode = mode >> 2;
 	short r_mode = mode & 0b0011;
@@ -151,7 +153,7 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 	uint16_t* src_p  = NULL;	// if still null after the switch, use the imediate value instead
 	uint16_t address = 0;		// used in case of dereferencement
 
-	switch( l_mode ) // src
+	switch( l_mode ) // prepare the source
 	{
 		case 0:		// immediate value 
 					// do nothing : if src_p is null after switch statement, use l_value
@@ -169,7 +171,7 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 			src_p = &memory[ address ];
 			checkForSegfault( address ); break;
 	}
-	switch( r_mode )
+	switch( r_mode ) // prepare the destination
 	{
 		case 0:		// immediate value
 			Error("Cannot use immediate value as a destination"); break;
@@ -190,6 +192,9 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 	if( src_p  != NULL )		// not an immediate value 
 		src_value = *src_p;		// -> put the actual source value inside src_value
 								// this avoid different case.
+
+	// execute different operator based on the instruction
+
 	switch( op )
 	{
 		case ADD :
@@ -242,7 +247,6 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 	}
 }
 
-
 // push a value ( either immediate or from a register ) to the top of the stack
 // push and pop are factorized inside the same opcode to make room for DISP instruction
 void VM::executePUSH( uint32_t instruction )
@@ -287,36 +291,38 @@ void VM::executePOP( uint32_t instruction )
 // TODO : proper source dereferencement ! like addBasedOP
 void VM::executePROMPT( uint32_t instruction ) 
 {
-	uint16_t mode	= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
-	uint16_t src 	= ( instruction & 0x00F00000 ) >> 20;	// source register ( int16, or char ) or register containing address of string
-	bool newline	= ( instruction & 0x00010000 ) >> 16;
+	uint16_t mode	 = ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
+	uint16_t src_reg = ( instruction & 0x000000F0 ) >>  4;	// source register ( int16, or char ) or register containing address of string
+	uint8_t offset   = ( instruction & 0x0000000F );			// offset in case of dereferencement
 
+	short l_mode = mode >> 2;
+	short r_mode = mode & 0b0011;
 
 	switch( mode )
 	{
 		// DISPLAY MODES
 		case 0: // display as INT16 value
-			cout << static_cast<int16_t>(reg[src]) ; break;
+			cout << static_cast<int16_t>(reg[src_reg]) ; break;
 		case 1: // display as UINT16 value
-			cout << reg[src] ; break;
+			cout << reg[src_reg] ; break;
 		case 2: // display as char
-			cout << static_cast<char>(reg[src]) ; break;
+			cout << static_cast<char>(reg[src_reg]) ; break;
 
-				// in this mode src register is dereferenced, containing the address of the string in memory
+				// in this mode src_reg register is dereferenced, containing the address of the string in memory
 		case 3: // display a string : [ char16 ]* [ NULL ], 
 		{
 			string message = "";
 			for( int i=0; i < 65536; i++ ) // max size of string
 			{
-				if( memory[ reg[src] + i ] == 0 ) // NULL terminated earlier
+				if( memory[ reg[src_reg] + i ] == 0 ) // NULL terminated earlier
 					break;
-				char c = static_cast<char>( memory[ reg[src] + i ] );
+				char c = static_cast<char>( memory[ reg[src_reg] + i ] );
 				message += c;
 			}
 			cout << message; break;
 		}
-		case 4: // in this mode src register is dereferenced, containing the address of the value in memory
-			cout << memory[ reg[src]]; break;
+		case 4: // in this mode src_reg register is dereferenced, containing the address of the value in memory
+			cout << memory[ reg[src_reg]]; break;
 			
 		case 6: // only print a newline
 			cout << endl; break;
@@ -324,7 +330,7 @@ void VM::executePROMPT( uint32_t instruction )
 		// INPUT MODES
 		case 7: // input a value in a register
 			int16_t value; cin >> value;
-			reg[src] = static_cast<uint16_t>(value); break;
+			reg[src_reg] = static_cast<uint16_t>(value); break;
 
 		case 8: // input a string, to be pushed on the stack
 			char str[256]; cin.get(str, 256, '\n'); // null terminated by default
@@ -338,8 +344,6 @@ void VM::executePROMPT( uint32_t instruction )
 			}
 			break;
 	}
-	// print a new line if requested
-	if( newline ) cout << endl;
 }
 
 // take a register and set its value to a (pseudo) random one

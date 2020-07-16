@@ -99,7 +99,7 @@ public:
 	void load( std::vector<uint32_t> instructionArray );
 
 	// execute the program
-	void executeProgram( void );
+	void start( void );
 
 	// display the stack values
 	void dispMemoryStack( bool showReserved = false );

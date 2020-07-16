@@ -215,7 +215,8 @@ namespace Asm
 		else if( txt == ")" ) type = RPAREN;
 		else if( txt == "!" ) type = COMMENT;
 		else if( txt == "s" or txt == "ms" ) type = TIME;		// try to match time units 
-		else if( txt == "int" or txt == "char" or txt == "mem" or txt == "str" or txt == "string") type = DISP_TYPE; // try to match time units 
+		else if( txt == "int" or txt == "char" or txt == "mem" or txt == "str" 
+				or txt == "hex" or txt == "bin" ) type = DISP_TYPE; // try to match time units 
 		else if( parser::matchOP( txt ))			type = OP;				// try to match op
 		else if( parser::matchFlag( txt ))			type = FLAG;			// try to match Flags
 		else if( parser::matchFlowCtrl( txt ))		type = FLOW;			// try to match conditions for flags
@@ -260,6 +261,13 @@ namespace Asm
 			{
 				if( txt[txt.length()-1] != del ) txt += del;
 				txt += '@';
+				if( not parser::isSpace( line[i+1] )) txt += del;	
+				continue;
+			}
+			else if( line[i] == ';' )
+			{
+				if( txt[txt.length()-1] != del ) txt += del;
+				txt += ';';
 				if( not parser::isSpace( line[i+1] )) txt += del;	
 				continue;
 			}
@@ -424,17 +432,15 @@ namespace Asm
 				return parseRandInstr();
 			else if( op == "wait" )
 				return parseWaitInstr();
-			else if( op == "disp" )
+			else if( op == "disp" or op == "input")
 				return parsePromptInstr();
 			else if( op == "jump" or op == "call" or op == "ret" )
 				return parseJumpBasedInstr();
 			else{
-				compileError("instruction '" + current.text + "' not implemented yet");
-				return false;
+				return compileError("Unknown instruction '" + current.text + "'");
 			}
 		}
-		compileError("Not an instruction : '" + current.text + "'");
-		return false;
+		return compileError("Not an instruction : '" + current.text + "'");
 	}
 
 	// helper function
@@ -594,7 +600,7 @@ namespace Asm
 		}
 
 		// add the modes to the instruction
-		char modes = (l_mode << 2) + r_mode;
+		short modes = (l_mode << 2) + r_mode;
 		instruction |= modes << 24;
 
 		program.push_back( instruction );
@@ -668,117 +674,168 @@ namespace Asm
 		return false;
 	}
 
-	// TODO do input
-	// opcode 12, DISP, INPUT
-	bool Assembler::parsePromptInstr( void )
+
+
+	// Called by parsePromptInstr
+	bool Assembler::parseDispInstr( void )
 	{
-		uint32_t instruction = 0xC0000000;
-		uint8_t l_mode = 0; // source  mode, 0: address | 1: reg | 2: dereferenced reg
+		uint32_t instruction = 0xC1000000; // 1 for disp and 2 for input
+		uint8_t l_mode = 0; // source  mode, 0: value | 1: address | 2: reg | 3: dereferenced reg
 		uint8_t r_mode = 0;	// display mode, 0: char | 1: integer | 2: address (unsigned int) | 3: string
-		uint8_t select = 0; // 0: used as a disp | 1: used as an input
 		uint8_t reg	   = 0;
 		uint8_t offset = 0;		
 		uint16_t value = 0;
 
-		string op = parser::to_lower( current.text );
-		if( op == "disp" )
+		readToken(); // skip disp token
+
+
+		if( current.type == AROBASE )	// disp @256, char  
 		{
-			readToken(); // skip disp token
+			readToken();				// skip @ token
+			value = parseValue();		// expect a value after @ symbol
+			readComma();				// expect a comma
+			l_mode = 1;
+			instruction |= value;
 
-			if( current.type == AROBASE )	// disp @256, char  
-			{
-				readToken();				// skip @ token
-				value = parseValue();		// expect a value after @ symbol
-				readComma();				// expect a comma
-				l_mode = 1;
-				instruction |= value;
+		}
+		else if( current.type == REG )
+		{
+			value = getRegInd(current.text);
+			readToken();
+			readComma();
+			l_mode = 2;
+			instruction |= reg << 4;
+		}
+		else if( checkForDereferencement() )
+		{
+			readDereferencedReg( offset, reg ); 	
+			readComma();
+			l_mode = 3;
+			instruction |= reg << 4;
+			instruction |= offset;
+		}
+		else if( current.type == DECIMAL_VALUE or current.type == HEXA_VALUE 
+			or current.type == BINARY_VALUE )
+		{
+			uint16_t value = parseValue();
+			readComma();
+			l_mode = 0;
+			instruction |= value;
+		}
+		else
+			return compileError("Unexpected operand : '" + current.text + "'");
 
-			}
-			else if( current.type == DECIMAL_VALUE ) // disp 97, char
-			{
-				string value_str = current.text;
-				if( current.type == DECIMAL_VALUE )
-				{
-					int32_t i = atoi( value_str.c_str() );
-					if( i > 65536 or i < -32768 )
-					{
-						compileError( "Value '" + current.text + "' is too big to be encoded" );
-						return false;
-					}
-					value = static_cast<uint16_t>( i );
-					readToken();
-					readComma();
-					l_mode = 0;
-					instruction |= value;
-				}
-			}
-			else if( current.type == REG )
-			{
-				value = getRegInd(current.text);
-				readToken();
-				readComma();
-				l_mode = 2;
-				instruction |= reg << 4;
-			}
-			else if( checkForDereferencement() )
-			{
-				readDereferencedReg( offset, reg ); 	
-				readComma();
-				l_mode = 3;
+		// we can assume that the first operand and the comma has been correctly processed
+		// process second operand
+		if( current.type == DISP_TYPE )
+		{
+			if     ( current.text == "char") r_mode = 0;
+			else if( current.text == "int" ) r_mode = 1;
+			else if( current.text == "mem" ) r_mode = 2;
+			else if( current.text == "hex" ) r_mode = 3;
+			else if( current.text == "bin" ) r_mode = 4;
+			else if( current.text == "str" ) r_mode = 5;
+			readToken();
+		}
+		else
+			return compileError("Expected Display type, not '" + current.text + "'" );
 
-				instruction |= reg << 4;
-				instruction |= offset;
-			}
-			else
-				return compileError("Unexpected operand : '" + current.text + "'");
 
-			// we can assume that the first operand and the comma has been correctly processed
-			// process second operand
+		if( r_mode == 3 )
+		{
+			if( l_mode == 0 )
+				return compileError("Cannot display immediate value as str, use char instead");
+			if( l_mode == 2 )
+				return compileError("Cannot display register as str, use char instead");
+		}
+
+		// add the modes to the instruction
+		short modes = (l_mode << 4) + r_mode;
+		instruction |= modes << 16;
+
+		program.push_back( instruction );
+		return true;
+	}
+
+	// Called by parsePromptInstr
+	bool Assembler::parseInputInstr( void )
+	{
+		uint32_t instruction = 0xC2000000; // 1 for disp and 2 for input
+		uint8_t l_mode = 0; // source mode 0: immediate value | 1: address | 2: register 
+		uint8_t r_mode = 0; // dest   mode 0: char | 1: int | 2: mem | 3: str	
+		uint8_t reg	   = 0;
+		uint16_t value = 0;
+
+		readToken(); // read input token
+
+		if( current.type == REG )
+		{
+			l_mode = 2;
+			reg = getRegInd( current.text );
+			readToken(); // read reg
+			readComma(); // expect a comma
+
+			instruction |= reg << 4;
+
 			if( current.type == DISP_TYPE )
 			{
-				if( current.text == "char")
-				{
-					r_mode = 0;
-					readToken();
-				}
-				else if( current.text == "int" )
-				{
-					r_mode = 1;
-					readToken();
-				}
-				else if( current.text == "mem" )
-				{
-					r_mode = 2;
-					readToken();
-				}
-				else if( current.text == "str" or current.text == "string" )
+				if     ( current.text == "char") r_mode = 0;
+				else if( current.text == "int" ) r_mode = 1;
+				else if( current.text == "mem" ) r_mode = 2;
+				else if( current.text == "hex" ) r_mode = 3;
+				else if( current.text == "bin" ) r_mode = 4;
+				else if( current.text == "str" ) r_mode = 5;
+					return compileError("Cannot use string input with a register");
+				readToken();
+			}
+			else
+				return compileError("Expected input type, not '"+current.text+"'");
+
+		}
+		else if( current.type == AROBASE )
+		{
+			l_mode = 1;
+			readToken(); // read arobase
+			value = parseValue(); // read address value, and store it
+			readComma();
+
+			instruction |= value;
+
+			if( current.type == DISP_TYPE )
+			{
+				if( current.text == "str" or current.text == "string")
 				{
 					r_mode = 3;
 					readToken();
 				}
 				else
-					return compileError("Expected Display type, not '" + current.text + "'" );
-			}	
-
-			if( r_mode == 3 )
-			{
-				if( l_mode == 0 )
-					return compileError("Cannot display immediate value as str, use char instead");
-				if( l_mode == 2 )
-					return compileError("Cannot display register as str, use char instead");
+					return compileError("Expected string type after address operand, not '"+current.text+"'");
 			}
-
-			// add the modes to the instruction
-			char modes = (l_mode << 4) + r_mode;
-			instruction |= modes << 20;
-
-			program.push_back( instruction );
-			return true;
+			else 
+				return compileError("Expected string type after address operand, not '"+current.text+"'");
 		}
-		else if( op == "input" )
-		{
+		else
+			return compileError("Expected registers token or adress, not '" + current.text + "'");
 
-		}	
+		// add the modes to the instruction 
+		short modes = (l_mode << 4) + r_mode; // take 4bits each
+		instruction |= modes << 16;
+
+		program.push_back( instruction );
+
+		return true;
+	}
+
+
+	// opcode 12, DISP, INPUT
+	bool Assembler::parsePromptInstr( void )
+	{
+		string op = parser::to_lower( current.text );
+		if( op == "disp" )
+			return parseDispInstr();
+		else if( op == "input" )
+			return parseInputInstr();
+		return false;
 	}
 
 	// opcode 13, RAND
@@ -841,8 +898,4 @@ namespace Asm
 
 }
 
-// usage
-// cpl::Assembler compiler;
-
-// compiler.compile( "asm/test.basm" );
 
