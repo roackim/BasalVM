@@ -30,12 +30,12 @@ int main( int argc, char *argv[] )
 	}
 	// For Debugging purposes
 
-	cout << "\nAssembled :" << endl;
-	for( unsigned i=0; i<basm.program.size(); i++)
-	{
-		cout << "\t" << std::hex << std::uppercase << basm.program[i] << std::dec << endl;
-	}
-	cout << endl;
+	// cout << "\nAssembled :" << endl;
+	// for( unsigned i=0; i<basm.program.size(); i++)
+	// {
+	// 	cout << "\t" << std::hex << std::uppercase << basm.program[i] << std::dec << endl;
+	// }
+	// cout << endl;
 	
 	// Instanciate Virtual Machine
 	VM vm;

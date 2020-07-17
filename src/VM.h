@@ -85,7 +85,7 @@ private:
 	// no program size limit, dinamic array for less memory impact on average
 	std::vector<uint32_t> program;
 	// amount of reserved space in memory ( maybe useful for later ? )
-	const uint16_t RESERVED_SPACE = 2;
+	const uint16_t RESERVED_SPACE = 0;
 	// array containing the CPU flags, access like flags[ZRO]
 	bool flags[ F_COUNT ];
 	// used to generate random numbers

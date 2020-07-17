@@ -4,6 +4,7 @@
 #include <chrono> // used for cross platform sleep call
 #include <thread>
 #include <vector>
+#include <bitset> // used for binary display of number
 
 #include "misc.h"
 #include "VM.h"
@@ -34,7 +35,7 @@ void VM::initialize( void )
 		reg[i] = 0;
 	}
 	// push will increment reg[sp] before assignement
-	reg[sp] = RESERVED_SPACE-1; // save space for flags
+	reg[sp] = RESERVED_SPACE; // save space for flags
 	reg[ip] = 0;
 
 	program.clear();	 // clear current program
@@ -63,7 +64,7 @@ void VM::dispMemoryStack( bool showReserved ) const
 {
 	cout << "\n┌────────────────────┐\n│ -- Memory Stack    │" << endl;
 
-	for( unsigned i = reg[sp]; i >= RESERVED_SPACE; i-- )
+	for( unsigned i = reg[sp]; i > RESERVED_SPACE; i-- )
 	{
 		int16_t value = static_cast<int16_t>(memory[i]);
 		unsigned s = 11 - std::to_string( value ).length(); 
@@ -129,16 +130,18 @@ uint16_t VM::xorshift16( void )
 // modify flags ZRO, NEG and POS
 void VM::executeAddBasedOP( const uint32_t& instruction, OP op )
 {
-	// 4 bits for sign and mod : 1bit of sign, 3bits of mode value
-	uint16_t mode		= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
-	uint16_t dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register
+	// 4 bits for sign and offset : 1bit of sign, 3bits of offset value, offset therefore range from -7 to 7
+	uint8_t  mode		= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
+	uint8_t  dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register
 	bool	 dest_sign  = ( instruction & 0x00080000 ) >> 19;	// destination offset sign
-	uint16_t dest_off	= ( instruction & 0x00070000 ) >> 16;	// destination offset
-	uint16_t src		= ( instruction & 0x000000F0 ) >>  4;	// source register
+	uint8_t  dest_off	= ( instruction & 0x00070000 ) >> 16;	// destination offset
+	uint8_t  src		= ( instruction & 0x000000F0 ) >>  4;	// source register
 	bool	 src_sign   = ( instruction & 0x00000008 ) >>  0;	// source offset sign
-	uint16_t src_off	= ( instruction & 0x00000007 ) >>  0;	// source offset
+	uint8_t  src_off	= ( instruction & 0x00000007 ) >>  0;	// source offset
 	uint16_t src_value	= ( instruction & 0x0000FFFF );			// immediate value or address
 	uint16_t dest_value = ( instruction & 0x00FFFF00 ) >>  8;	// immediate address
+
+	// src_value will be used as the variable containing the source value.
 	
 	uint16_t l_mode = mode >> 2;
 	uint16_t r_mode = mode & 0b0011;
@@ -194,8 +197,8 @@ void VM::executeAddBasedOP( const uint32_t& instruction, OP op )
 
 	}
 
-	if( src_p  != NULL )		// not an immediate value 
-		src_value =  *src_p;		// -> put the actual source value inside src_value
+	if( src_p  != nullptr )		// not an immediate value 
+		src_value =  *src_p;	// -> put the actual source value inside src_value
 								// this avoid different case.
 
 	// execute different operator based on the instruction
@@ -283,61 +286,88 @@ void VM::executePOP( const uint32_t& instruction )
 // TODO : REFACTOR according to assembler.cpp
 void VM::executePROMPT( const uint32_t& instruction ) 
 {
-	uint16_t mode	 = ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
-	uint16_t src_reg = ( instruction & 0x000000F0 ) >>  4;	// source register ( int16, or char ) or register containing address of string
-	uint8_t offset   = ( instruction & 0x0000000F );			// offset in case of dereferencement
+	uint8_t  select	 = ( instruction & 0x0F000000 ) >> 24;	// 1: disp | 2: input 
+	uint8_t  l_mode	 = ( instruction & 0x00F00000 ) >> 20;	// 0: value | 1: address | 2: register | 3: deref register	
+	uint8_t  r_mode	 = ( instruction & 0x000F0000 ) >> 16;	// 0: char | 1: int | 2: mem ( unsigned ) | 3:hex  | 4: bin | 5: str
+	uint8_t  src_reg = ( instruction & 0x000000F0 ) >>  4;	// source register ( int16, or char ) or register containing address of string
+	bool	 src_sign   = ( instruction & 0x00000008 ) >>  0;	// source offset sign
+	uint8_t  src_off	= ( instruction & 0x00000007 ) >>  0;	// source offset
+	uint16_t src_value = ( instruction & 0x0000FFFF );		// immediate value or address	
 
-	short l_mode = mode >> 2;
-	short r_mode = mode & 0b0011;
+	// src_value will be used as the variable containing the source value.
 
-	switch( mode )
+									// after switch case, copy the value pointed by src_p to src_value
+	uint16_t* src_p  = nullptr ;	// if still null after the switch, use the imediate value instead
+	uint16_t address = 0;			// used in case of dereferencement
+
+	if( select == 1 ) // disp  
 	{
-		// DISPLAY MODES
-		case 0: // display as INT16 value
-			cout << static_cast<int16_t>(reg[src_reg]) ; break;
-		case 1: // display as UINT16 value
-			cout << reg[src_reg] ; break;
-		case 2: // display as char
-			cout << static_cast<char>(reg[src_reg]) ; break;
-
-				// in this mode src_reg register is dereferenced, containing the address of the string in memory
-		case 3: // display a string : [ char16 ]* [ NULL ], 
+		switch( l_mode )
 		{
-			string message = "";
-			for( int i=0; i < 65536; i++ ) // max size of string
-			{
-				if( memory[ reg[src_reg] + i ] == 0 ) // NULL terminated earlier
-					break;
-				char c = static_cast<char>( memory[ reg[src_reg] + i ] );
-				message += c;
-			}
-			cout << message; break;
+			case 0: // value
+				break;
+
+			case 1: // address
+				address = src_value;
+				src_p = &memory[ address ];
+				checkForSegfault( address ); 
+				break; 
+
+			case 2: // register
+				src_p = &reg[src_reg]; 
+				break;
+
+			case 3: // dereferenced register
+				address = reg[src_reg] + coef(src_sign) * src_off; 	
+				src_p = &memory[ address ];
+				checkForSegfault( address ); 
+				break;
+				
+			default:
+				Error("Unexpected value in instruction"); 
+				break;
 		}
-		case 4: // in this mode src_reg register is dereferenced, containing the address of the value in memory
-			cout << memory[ reg[src_reg]]; break;
-			
-		case 6: // only print a newline
-			cout << endl; break;
 
-		// INPUT MODES
-		case 7: // input a value in a register
-			int16_t value; cin >> value;
-			reg[src_reg] = static_cast<uint16_t>(value); break;
+		if( src_p  != nullptr )		// not an immediate value 
+			src_value =  *src_p;	// -> put the actual source value inside src_value
 
-		case 8: // input a string, to be pushed on the stack
-			char str[256]; cin.get(str, 256, '\n'); // null terminated by default
-			if( reg[sp] + 1 < UINT16_MAX - 256 ) // check if there is enough room
+		switch( r_mode )
+		{
+			case 0: // char
+				cout << static_cast<char>( src_value ); 
+				break;
+			case 1: // int
+				cout << static_cast<int16_t>( src_value );
+				break;
+			case 2: // mem
+				cout << static_cast<uint16_t>( src_value );
+				break;
+			case 3: // hex
+				cout << std::hex << std::uppercase << static_cast<uint16_t>( src_value ) << std::dec;
+				break; 
+			case 4: // bin
 			{
-				for( int i=0; i<256; i++)
-				{
-					memory[ ++reg[sp] ] = static_cast<uint16_t>( str[i] );
-					if( str[i] == 0 ) break; // Null Terminated before end of buffer
-				}
+				std::bitset<16> binNbr( src_value );
+				cout << binNbr;
+				break;
 			}
-			break;
-		default:
-			// Whatever, will be refactored
-			break;
+			case 5: // str
+				if( l_mode != 1 and l_mode != 3 )
+					Error("Runtime error which should be compile-time error: Cannot only display string on addresses");
+				
+				string mess = "";
+				uint16_t cursor = address; // initialize at start of string
+				while( memory[ cursor ] != 0 and cursor < UINT16_MAX )
+				{
+					mess += static_cast<char>( memory[cursor] );
+					cursor += 1;
+				}
+				cout << mess ;
+		}
+	}
+	else if( select == 2 )
+	{
+
 	}
 }
 
