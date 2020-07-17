@@ -14,13 +14,10 @@ using std::endl;
 using std::cin;
 
 // take the intruction code from the instruction
-OP getInstruction( uint32_t instruction )
+OP getInstruction( const uint32_t& instruction )
 {
-	// only keep the 4 left hand bits
-	instruction = ( instruction & 0xF0000000 ) >> 28;
-	
 	// convert value as an OP 
-	OP op = OP( instruction );
+	OP op = OP( (instruction >> 28) );
 	return op;	
 }
 
@@ -62,7 +59,7 @@ void VM::start( void )
 }
 
 // display the stack values
-void VM::dispMemoryStack( bool showReserved )
+void VM::dispMemoryStack( bool showReserved ) const
 {
 	cout << "\n┌────────────────────┐\n│ -- Memory Stack    │" << endl;
 
@@ -100,7 +97,7 @@ void VM::dispMemoryStack( bool showReserved )
 }
 
 // check if the address is RESERVED
-void VM::checkForSegfault( int16_t address )
+void VM::checkForSegfault( const uint16_t& address )
 {
 	if( address < RESERVED_SPACE )
 	{
@@ -130,27 +127,27 @@ uint16_t VM::xorshift16( void )
 // theses intrcutions are fatorized because they function strictly the same and are encoded identically by the assembler.
 // add a value (from a register or immediate) to a destination register
 // modify flags ZRO, NEG and POS
-void VM::executeAddBasedOP( uint32_t instruction, OP op )
+void VM::executeAddBasedOP( const uint32_t& instruction, OP op )
 {
 	// 4 bits for sign and mod : 1bit of sign, 3bits of mode value
-	short mode		= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
-	short dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register
-	bool  dest_sign = ( instruction & 0x00080000 ) >> 19;	// destination offset sign
-	short dest_off	= ( instruction & 0x00070000 ) >> 16;	// destination offset
-	short src		= ( instruction & 0x000000F0 ) >>  4;	// source register
-	bool  src_sign  = ( instruction & 0x00000008 ) >>  0;	// source offset sign
-	short src_off	= ( instruction & 0x00000007 ) >>  0;	// source offset
-	short src_value	= ( instruction & 0x0000FFFF );			// immediate value or address
-	short dest_value= ( instruction & 0x00FFFF00 ) >>  8;	// immediate address
+	uint16_t mode		= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
+	uint16_t dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register
+	bool	 dest_sign  = ( instruction & 0x00080000 ) >> 19;	// destination offset sign
+	uint16_t dest_off	= ( instruction & 0x00070000 ) >> 16;	// destination offset
+	uint16_t src		= ( instruction & 0x000000F0 ) >>  4;	// source register
+	bool	 src_sign   = ( instruction & 0x00000008 ) >>  0;	// source offset sign
+	uint16_t src_off	= ( instruction & 0x00000007 ) >>  0;	// source offset
+	uint16_t src_value	= ( instruction & 0x0000FFFF );			// immediate value or address
+	uint16_t dest_value = ( instruction & 0x00FFFF00 ) >>  8;	// immediate address
 	
-	short l_mode = mode >> 2;
-	short r_mode = mode & 0b0011;
+	uint16_t l_mode = mode >> 2;
+	uint16_t r_mode = mode & 0b0011;
 
 	// multiple dereferencement not possible eg: add 4(rsp), 5(rsp)
 	// like a real assembly, but there are no limitations to enfore this other than a if statement in Assembler.cpp
 	
-	uint16_t* dest_p = NULL;
-	uint16_t* src_p  = NULL;	// if still null after the switch, use the imediate value instead
+	uint16_t* dest_p = nullptr ;
+	uint16_t* src_p  = nullptr ;	// if still null after the switch, use the imediate value instead
 	uint16_t address = 0;		// used in case of dereferencement
 
 	switch( l_mode ) // prepare the source
@@ -170,11 +167,15 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 			address = reg[src] + coef(src_sign) * src_off; 	
 			src_p = &memory[ address ];
 			checkForSegfault( address ); break;
+
+		default:
+			Error("Unexpected value in instruction");
 	}
 	switch( r_mode ) // prepare the destination
 	{
 		case 0:		// immediate value
 			Error("Cannot use immediate value as a destination"); break;
+
 		case 1:		// immediate address
 			address = dest_value;
 			dest_p = &memory[ address ];
@@ -187,10 +188,14 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 			address = reg[dest] + coef(dest_sign) * dest_off; 	
 			dest_p = &memory[ address ];
 			checkForSegfault( address ); break;
+
+		default:
+			Error("Cannot use immediate value as a destination"); break;
+
 	}
 
 	if( src_p  != NULL )		// not an immediate value 
-		src_value = *src_p;		// -> put the actual source value inside src_value
+		src_value =  *src_p;		// -> put the actual source value inside src_value
 								// this avoid different case.
 
 	// execute different operator based on the instruction
@@ -211,22 +216,9 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 			*dest_p = src_value;
 			updateFlags( *dest_p ); break;
 
-		case CMP: // not very clean, should rewrite a function doing the addition on 32 bits, like done for MUL.
-			if( static_cast<int16_t>(*dest_p) < 0 and src_value > 0 ) // avoid overflow
-			{
-				flags[POS] = 0;
-				flags[NEG] = 1;
-			}
-			else if( static_cast<int16_t>(*dest_p) > 0 and src_value < 0 )
-			{
-				flags[POS] = 1;
-				flags[NEG] = 0;	
-			}
-			else // no overflow possible left, substract normally
-			{	// process result in a local variable, in order to preserve destination 
-				uint16_t result = *dest_p - src_value;
-				updateFlags( result );
-			}
+		case CMP: // same as sub except dest operand is unchanged 
+			updateSubOverflow( *dest_p, src_value );
+			updateFlags( *dest_p - src_value );
 			break;
 
 		case MUL:
@@ -249,7 +241,7 @@ void VM::executeAddBasedOP( uint32_t instruction, OP op )
 
 // push a value ( either immediate or from a register ) to the top of the stack
 // push and pop are factorized inside the same opcode to make room for DISP instruction
-void VM::executePUSH( uint32_t instruction )
+void VM::executePUSH( const uint32_t& instruction )
 {
 	uint16_t mode	= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
 	uint16_t src 	= ( instruction & 0x0000F000 ) >> 12;	// source register
@@ -263,7 +255,7 @@ void VM::executePUSH( uint32_t instruction )
 		else if( mode == 1 ) // push immediate value
 		{
 			int16_t value = ( instruction & 0x0000FFFF );
-			memory[++reg[sp]] = value;
+			memory[++reg[sp]] = static_cast<uint16_t>( value );
 		}
 	}
 	else // not enough memory left to push
@@ -271,7 +263,7 @@ void VM::executePUSH( uint32_t instruction )
 }
 
 // take the top value, and decrement rsp, while placing ( or discarding ) the value in a register
-void VM::executePOP( uint32_t instruction ) 
+void VM::executePOP( const uint32_t& instruction ) 
 {
 	if( reg[sp] >= RESERVED_SPACE ) // check if there is something on the stack
 	{
@@ -288,8 +280,8 @@ void VM::executePOP( uint32_t instruction )
 }
 
 // Either act as a cout or a cin, either with a value or a string 
-// TODO : proper source dereferencement ! like addBasedOP
-void VM::executePROMPT( uint32_t instruction ) 
+// TODO : REFACTOR according to assembler.cpp
+void VM::executePROMPT( const uint32_t& instruction ) 
 {
 	uint16_t mode	 = ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction
 	uint16_t src_reg = ( instruction & 0x000000F0 ) >>  4;	// source register ( int16, or char ) or register containing address of string
@@ -343,26 +335,30 @@ void VM::executePROMPT( uint32_t instruction )
 				}
 			}
 			break;
+		default:
+			// Whatever, will be refactored
+			break;
 	}
 }
 
 // take a register and set its value to a (pseudo) random one
-void VM::executeRAND( uint32_t instruction )
+void VM::executeRAND( const uint32_t& instruction )
 {
 	uint16_t mode		= ( instruction & 0x0F000000 ) >> 24;	// chose range 
 	uint16_t dest		= ( instruction & 0x00F00000 ) >> 20;	// destination register	
 	uint16_t max_value	= ( instruction & 0x0000FFFF );			// choose max value
 
 	if( mode == 0 )		  // no max value
-		reg[dest] = static_cast<int16_t>(xorshift16());
+		reg[dest] = xorshift16();
 	else if( mode == 1 )  // -max_value < x < max_value
-		reg[dest] =  static_cast<int16_t>(xorshift16()) % max_value;
+		reg[dest] = xorshift16() % max_value;
 	else if( mode == 2 )  // 0 <= x < max_value 	
-		reg[dest] = ( static_cast<int16_t>(xorshift16()) % max_value / 2 ) + ( max_value / 2 );
+		reg[dest] = (xorshift16() % max_value / 2 ) + ( max_value / 2 );
 }
 
+// TODO REFACTOR akin to AddBasedInstr
 // Binary Operator : Either act as AND, OR, NOT or XOR, used to compress 4 instructions in 1 opcode
-void VM::executeBinBasedOP( uint32_t instruction ) 
+void VM::executeBinBasedOP( const uint32_t& instruction ) 
 {
 	short mode		= ( instruction & 0x07000000 ) >> 24;	// mode of the instruction either AND, OR, NOT or XOR
 	short op		= ( instruction & 0x00F00000 ) >> 24;	// choose between immediate value or source register
@@ -394,11 +390,14 @@ void VM::executeBinBasedOP( uint32_t instruction )
 		case 4:
 			*dest_p ^= (value);
 			updateFlags( *dest_p ); break;
+		default:
+			Error("Unexpected value in instruction");
+			break;
 	}
 }
 
 // sleep for a certain amount of time before going to the next instruction
-void VM::executeWAIT( uint32_t instruction )
+void VM::executeWAIT( const uint32_t& instruction )
 {
 	uint16_t mode		= ( instruction & 0x0F000000 ) >> 24;	// chose range 
 	uint16_t value		= ( instruction & 0x0000FFFF );			// choose max value
@@ -415,7 +414,7 @@ void VM::executeWAIT( uint32_t instruction )
 }
 
 // redirect to the correct function depending on the instruction code contained in the first 8 bits
-void VM::processInstruction( uint32_t instruction )
+void VM::processInstruction( const uint32_t& instruction )
 {
 	// get the current opcode
 	OP op = getInstruction( instruction );
@@ -448,7 +447,7 @@ void VM::processInstruction( uint32_t instruction )
 //	|    Flags Update Functions    |
 //	+------------------------------+
 
-void VM::dispFlagsRegister( void )
+void VM::dispFlagsRegister( void ) const
 {
 	cout << "┌─────┬─────┬─────┬─────┬─────┬─────┐" << endl;
 	cout << "│ EQU │ ZRO │ POS │ NEG │ OVF │ ODD │" << endl;
@@ -460,45 +459,52 @@ void VM::dispFlagsRegister( void )
 }
 
 // update every flag except Overflow since it needs operands value.  ZRO and EQU flags are identical in practice.
-void VM::updateFlags( int16_t value, bool cmp )
+void VM::updateFlags( const uint16_t& value, bool cmp )
 {
+	int16_t val = static_cast<int16_t>( value );
 	flags[NEG] = 0;
 	flags[POS] = 0;
-	if( value == 0 )
+	if( val == 0 )
 	{
 		flags[ZRO] = 1;
 		if( cmp == true )
 			flags[EQU] = 1;
 	}
-	else if( value < 0 )
+	else if( val < 0 )
 		flags[NEG] = 1;
 	else
 		flags[POS] = 1;
 
-	flags[ODD] = value % 2;
+	flags[ODD] = val % 2;
 }
 
 // check if you can get back to the operand from the result, if not, result has overflowed
-void VM::updateAddOverflow(  int16_t dest, int16_t src )
+void VM::updateAddOverflow( const uint16_t& dest, const uint16_t& src )
 {
-	int16_t result = dest + src;
-	if( dest != result - src )	flags[OVF] = 1; 
+	int16_t dest_val = static_cast<int16_t>( dest );
+	int16_t src_val  = static_cast<int16_t>( src  );
+	int16_t result = dest_val + src_val;
+	if( dest_val != result - src_val )	flags[OVF] = 1; 
 	else flags[OVF] = 0;
 }
 
 // check if you can get back to the operand from the result, if not, result has overflowed
-void VM::updateSubOverflow(  int16_t dest, int16_t src )
+void VM::updateSubOverflow( const uint16_t& dest, const uint16_t& src )
 {
-	int16_t result = dest - src;
-	if( dest != result + src )	flags[OVF] = 1; 
+	int16_t dest_val = static_cast<int16_t>( dest );
+	int16_t src_val  = static_cast<int16_t>( src  );
+	int16_t result = dest_val - src_val;
+	if( dest_val != result + src_val )	flags[OVF] = 1; 
 	else flags[OVF] = 0;
 }
 
 // check if you can get back to the operand from the result, if not, result has overflowed
-void VM::updateMulOverflow(  int16_t dest, int16_t src )
+void VM::updateMulOverflow( const uint16_t& dest, const uint16_t& src )
 {
-	int16_t result = dest * src;
-	if( dest != result / src )	flags[OVF] = 1; 
+	int16_t dest_val = static_cast<int16_t>( dest );
+	int16_t src_val  = static_cast<int16_t>( src  );
+	int16_t result = dest_val * src_val;
+	if( dest_val != result / src_val )	flags[OVF] = 1; 
 	else flags[OVF] = 0;
 }
 

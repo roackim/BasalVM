@@ -91,6 +91,8 @@ namespace Asm
 				return "char_value";
 			case 20:
 				return "unkown";
+			default:
+				return "unkown";
 		}
 		return "ERROR";
 	}
@@ -543,14 +545,14 @@ namespace Asm
 			readToken();
 			readComma();
 			l_mode = 2;
-			instruction |= l_reg << 4;
+			instruction |= static_cast<uint32_t>( l_reg << 4 );
 
 		} // left operand is a dereferenced register
 		else if( checkForDereferencement() )
 		{
 			readDereferencedReg( l_offset, l_reg );
 			readComma();
-			instruction |= l_reg    << 4;
+			instruction |= static_cast<uint32_t>( l_reg << 4 ); // need explicit cast because of implicit int cast
 			instruction |= l_offset << 0;
 			l_mode = 3;
 		} // branch on immediate value as left operand ex:	add 123, cx
@@ -579,14 +581,14 @@ namespace Asm
 
 			uint16_t dest_address = parseValue();	// expect a value after @ symbol
 			instruction &= 0xFF0000FF;
-			instruction |= dest_address << 8;				// immediate address 
+			instruction |= static_cast<uint32_t>( dest_address << 8 );				// immediate address 
 
 		} // branch on register as right operand ex: add ax, cx
 		else if( current.type == REG )
 		{
 			r_reg = getRegInd( current.text );	
 			readToken();
-			instruction |= r_reg << 20;
+			instruction |= static_cast<uint32_t>( r_reg << 20 );
 			r_mode = 2;
 		} // branch on dereferenced register as right operand ex: add 45, (dx) 
 		else if( checkForDereferencement() )
@@ -594,14 +596,14 @@ namespace Asm
 			if( l_mode == 3 ) // took this from assembly, but no real limitation force this. Might be subject to change.
 				return compileError("Cannot use two dereferencement in the same instruction");
 			readDereferencedReg( r_offset, r_reg );
-			instruction |= r_reg    << 20;
-			instruction |= r_offset << 16;
+			instruction |= static_cast<uint32_t>( r_reg << 20 );
+			instruction |= static_cast<uint32_t>( r_offset << 16 );
 			r_mode = 3;
 		}
 
 		// add the modes to the instruction
 		short modes = (l_mode << 2) + r_mode;
-		instruction |= modes << 24;
+		instruction |= static_cast<uint32_t>( modes << 24 );
 
 		program.push_back( instruction );
 		return true;
@@ -628,8 +630,7 @@ namespace Asm
 		else if( current.type == REG )
 		{
 			int src = getRegInd( current.text );	
-			src = src << 12;
-			instruction |= src;
+			instruction |= static_cast<uint32_t>( src << 12 );
 			readToken(); // skip register
 		}
 		else if( current.type == ENDL )
@@ -650,8 +651,7 @@ namespace Asm
 		if( current.type == REG ) // pop to a register
 		{
 			int dest = getRegInd( current.text );	
-			dest = dest << 20;
-			instruction |= dest;
+			instruction |= static_cast<uint32_t>( dest << 20 );
 			readToken();
 		}
 		else if( current.type == ENDL ) // just pop, discarding the value
@@ -704,23 +704,23 @@ namespace Asm
 			readToken();
 			readComma();
 			l_mode = 2;
-			instruction |= reg << 4;
+			instruction |= static_cast<uint32_t>( reg << 4 );
 		}
 		else if( checkForDereferencement() )
 		{
 			readDereferencedReg( offset, reg ); 	
 			readComma();
 			l_mode = 3;
-			instruction |= reg << 4;
+			instruction |= static_cast<uint32_t>( reg << 4 );
 			instruction |= offset;
 		}
 		else if( current.type == DECIMAL_VALUE or current.type == HEXA_VALUE 
 			or current.type == BINARY_VALUE )
 		{
-			uint16_t value = parseValue();
+			uint16_t val = parseValue();
 			readComma();
 			l_mode = 0;
-			instruction |= value;
+			instruction |= val;
 		}
 		else
 			return compileError("Unexpected operand : '" + current.text + "'");
@@ -751,7 +751,7 @@ namespace Asm
 
 		// add the modes to the instruction
 		short modes = (l_mode << 4) + r_mode;
-		instruction |= modes << 16;
+		instruction |= static_cast<uint32_t>( modes << 16 );
 
 		program.push_back( instruction );
 		return true;
@@ -775,7 +775,7 @@ namespace Asm
 			readToken(); // read reg
 			readComma(); // expect a comma
 
-			instruction |= reg << 4;
+			instruction |= static_cast<uint32_t>( reg << 4 );
 
 			if( current.type == DISP_TYPE )
 			{
@@ -822,7 +822,7 @@ namespace Asm
 
 		// add the modes to the instruction 
 		short modes = (l_mode << 4) + r_mode; // take 4bits each
-		instruction |= modes << 16;
+		instruction |= static_cast<uint32_t>( modes << 16 );
 
 		program.push_back( instruction );
 
