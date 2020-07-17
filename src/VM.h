@@ -70,6 +70,11 @@ class VM
 //	|    VM attributes    |
 //	+---------------------+
 
+
+public:
+	// array containing the registers access like reg[r2], public so you can do : vm.reg[ax] = 238; in main()
+	uint16_t reg[ R_COUNT ];
+
 private:
 	// array of word addresses  (16 bits offset)
 	// ~ amount to 130 ko of memory, no need for dynamic allocation
@@ -82,9 +87,7 @@ private:
 	bool flags[ F_COUNT ];
 	// used to generate random numbers
 	uint16_t rnd_seed;
-public:
-	// array containing the registers access like reg[r2], public so you can do : vm.reg[ax] = 238; in main()
-	uint16_t reg[ R_COUNT ];
+
 
 
 //    All functions are public
@@ -92,6 +95,7 @@ public:
 //	|    VM basic functions    |
 //	+--------------------------+
 
+public:
 	// initialize registers to 0, initialize the seed for random numbers
 	void initialize( void );
 
@@ -103,7 +107,12 @@ public:
 
 	// display the stack values
 	void dispMemoryStack( bool showReserved = false );
+
+	// display the content of Flags byte, with the corresponding flags eg ZRO, EQU, ODD etc..
+	void dispFlagsRegister( void );
 	
+
+private:
 	// check if the address is RESERVED
 	void checkForSegfault( int16_t address );
 
@@ -148,9 +157,6 @@ public:
 //	+------------------------------+
 //	|    Flags Update Functions    |
 //	+------------------------------+
-	
-	// display the content of Flags byte, with the corresponding flags eg ZRO, EQU, ODD etc..
-	void dispFlagsRegister( void );
 
 	// update every flag except Overflow since it needs operands value. Special case for EQU and ZRO see below
 	// sub_or_cmp : false for sub (ZRO flag) and true for cmp (EQU flag)

@@ -61,14 +61,21 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 	class Assembler
 	{
 	public:
+		std::vector<uint32_t> program;			// store all the instructions
+
+	private:
 		uint64_t rsp = 0;						// pointer to next instructions while compiling, increment every time an instruction is parsed
 		uint64_t   j = 0;						// used to count tokens
 		uint64_t lineNbr = 1;					// one empty line is always artifially added at the begining
 		std::vector<token> tokens;				// store all tokens
-		std::vector<uint32_t> program;			// store all the instructions
 		std::map<string, uint16_t> labels;		// store addresses of labels
 		token current;							// used as current token
 
+	public:
+		// assemble instructions
+		bool assemble( string fileName );
+	
+	private:
 		// increment j and reassign token t
 		bool readToken( void );
 
@@ -101,9 +108,6 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 
 		// load a file and tokenize it
 		bool loadAndTokenize( string fileName );
-
-		// assemble instructions
-		bool assemble( string fileName );
 
 		// look at a token and redirect toward the appropriatre function, eg : ADD -> call parseAddBasedInstr()		
 		bool parseOneInstr( void );
