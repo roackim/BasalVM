@@ -28,6 +28,7 @@ int main( int argc, char *argv[] )
 		cerr << "A problem has occured while assembling file '" << file << "'." << endl;
 		exit( -1 );
 	}
+
 	// For Debugging purposes
 
 	// cout << "\nAssembled :" << endl;
