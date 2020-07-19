@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 
+using std::string;
+
 void Error( std::string message ) // TODO Subject to change !
 {
 	std::cerr << "/!\\ Error : " << message << ". \nTerminating the program." << std::endl;
@@ -13,5 +15,3 @@ short coef( bool value )
 {
 	return -(value*2 -1);
 }
-
-

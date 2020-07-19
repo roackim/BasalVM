@@ -8,11 +8,13 @@
 
 #include "misc.h"
 #include "VM.h"
+#include "parser.h"
 
 using std::string;
 using std::cout;
 using std::endl;
 using std::cin;
+using std::flush;
 
 // take the intruction code from the instruction
 OP getInstruction( const uint32_t& instruction )
@@ -21,6 +23,48 @@ OP getInstruction( const uint32_t& instruction )
 	OP op = OP( (instruction >> 28) );
 	return op;	
 }
+
+
+
+// take a string and return if possible the correct 16 bits number
+uint16_t parseInputValue( string value )
+{
+	if( parser::matchBinValue( value ) )
+	{
+		value = value.substr( 2, value.length() - 1 ); // remove the base before number eg : 0b0101 -> 0101
+		if( value.length() > 16 )
+		{
+			Error( "Value '" + value + "' is too big to be encoded" );
+			return false;
+		}
+		long int i = std::stol( value.c_str(), nullptr, 2);
+		return static_cast<uint16_t>( i );
+	}
+	else if( parser::matchHexaValue( value ) )
+	{
+		value = value.substr( 2, value.length() - 1 ); // remove the base before number eg : 0x0FA2 -> 0FA2
+		if( value.length() > 4 )
+		{
+			Error( "Value '" + value + "' is too big to be encoded" );
+			return false;
+		}
+		long int i = std::stol( value.c_str(), nullptr, 16);
+		return static_cast<uint16_t>( i );
+	}
+	else if( parser::matchDecimalValue( value) )
+	{
+		int32_t i = atoi( value.c_str() );
+		if( i > 65536 or i < -32768 )
+		{
+			Error( "Value '" + value + "' is too big to be encoded" );
+			return false;
+		}
+		return static_cast<uint16_t>( i );
+	}
+	Error( "Expected a value" );
+	return 0;
+}
+
 
 
 //	+--------------------------+
@@ -64,7 +108,7 @@ void VM::dispMemoryStack( bool showReserved ) const
 {
 	cout << "\n┌────────────────────┐\n│ -- Memory Stack    │" << endl;
 
-	for( unsigned i = reg[sp]; i > RESERVED_SPACE; i-- )
+	for( int i = reg[sp]; i >= RESERVED_SPACE and i >=0 ; i-- )
 	{
 		int16_t value = static_cast<int16_t>(memory[i]);
 		unsigned s = 11 - std::to_string( value ).length(); 
@@ -78,9 +122,8 @@ void VM::dispMemoryStack( bool showReserved ) const
 
 		cout << value << "  │" << endl;
 	}
-
 	cout << "│ -- Reserved Memory │" << endl;
-	if( showReserved )
+	if( showReserved and RESERVED_SPACE > 0)
 	{
 		for( int i = RESERVED_SPACE-1; i >= 0; i-- )
 		{
@@ -327,31 +370,31 @@ void VM::executePROMPT( const uint32_t& instruction )
 				Error("Unexpected value in instruction"); 
 				break;
 		}
-
 		if( src_p  != nullptr )		// not an immediate value 
 			src_value =  *src_p;	// -> put the actual source value inside src_value
 
 		switch( r_mode )
 		{
 			case 0: // char
-				cout << static_cast<char>( src_value ); 
+				cout << static_cast<char>( src_value ) << flush; 
 				break;
 			case 1: // int
-				cout << static_cast<int16_t>( src_value );
+				cout << static_cast<int16_t>( src_value ) << flush;
 				break;
 			case 2: // mem
-				cout << static_cast<uint16_t>( src_value );
+				cout << static_cast<uint16_t>( src_value ) << flush;
 				break;
 			case 3: // hex
-				cout << std::hex << std::uppercase << static_cast<uint16_t>( src_value ) << std::dec;
+				cout << std::hex << std::uppercase << static_cast<uint16_t>( src_value ) << std::dec << flush;
 				break; 
 			case 4: // bin
 			{
 				std::bitset<16> binNbr( src_value );
-				cout << binNbr;
+				cout << binNbr << flush;
 				break;
 			}
 			case 5: // str
+			{
 				if( l_mode != 1 and l_mode != 3 )
 					Error("Runtime error which should be compile-time error: Cannot only display string on addresses");
 				
@@ -362,12 +405,107 @@ void VM::executePROMPT( const uint32_t& instruction )
 					mess += static_cast<char>( memory[cursor] );
 					cursor += 1;
 				}
-				cout << mess ;
+				cout << mess << flush ;
+				break;
+			}
+			default:
+				Error("Unexpected value in instruction");
 		}
 	}
-	else if( select == 2 )
+	else if( select == 2 ) // input
 	{
+		switch( l_mode )
+		{
+			case 0: // value
+				Error("(Assembler Error) Cannot use immediate value with input instruction"); 
+				break;
 
+			case 1: // address
+				address = src_value;
+				src_p = &memory[ address ];
+				checkForSegfault( address ); 
+				break; 
+
+			case 2: // register
+				src_p = &reg[src_reg]; 
+				break;
+
+			case 3: // dereferenced register
+				address = reg[src_reg] + coef(src_sign) * src_off; 	
+				src_p = &memory[ address ];
+				checkForSegfault( address ); 
+				break;
+				
+			default:
+				Error("Unexpected value in instruction"); 
+				break;
+		}
+		switch( r_mode )
+		{
+			case 0: // char
+			{
+				char input_value;
+				cin >> input_value;
+				*src_p = static_cast<uint16_t>( input_value );
+				break;
+			}
+			case 1: // int
+			{
+				int16_t input_value;
+				cin >> input_value;
+				*src_p = static_cast<uint16_t>( input_value );
+				break;
+			}
+			case 2: // mem
+			{
+				uint16_t input_value;
+				cin >> input_value;
+				*src_p = static_cast<uint16_t>( input_value );
+				break;
+			}
+			case 3: // hex
+			{
+				uint16_t input_value;
+				string input_string;
+				cin >> input_string;
+				if( parser::matchHexaValue( input_string.c_str() ))
+					input_value = parseInputValue( input_string );
+				else
+					input_value = 0;
+				*src_p = static_cast<uint16_t>( input_value );
+				break; 
+			}
+			case 4: // bin
+			{
+				uint16_t input_value;
+				string input_string;
+				cin >> input_string;
+				if( parser::matchBinValue( input_string.c_str() ))
+					input_value = parseInputValue( input_string );
+				else
+					input_value = 0;
+				*src_p = static_cast<uint16_t>( input_value );
+				break; 
+			}
+			case 5: // str
+			{
+				string input_string;
+				std::getline(cin, input_string);
+				if( address + input_string.length() >= UINT16_MAX )
+					Error("Not enough memory to store input string");
+				else
+				{
+					for( unsigned i=0; i<input_string.length(); i++)
+					{
+						memory[address + i] = static_cast<uint16_t>( input_string[i] );
+					}
+					memory[address + input_string.length()] = static_cast<uint16_t>( 0 );
+				}
+				break;
+			}
+			default:
+				Error("Unexpected value in instruction");
+		}
 	}
 }
 

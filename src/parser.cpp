@@ -80,8 +80,8 @@ namespace parser
 			if( not isNumber( s[i] )) return false; // must have atleast one number
 		}
 		return true;
-				
 	}
+
 	bool matchHexaValue( const string& s )
 	{
 		unsigned off = 0;
@@ -110,6 +110,30 @@ namespace parser
 		return true;
 	}
 
+	bool matchCharValue( const string& s )
+	{
+		if( s[0] != '\'' )
+			return false;
+		else
+		{
+			if( s.length() == 3 )
+			{
+				if( s[2] == '\'' ) 
+					return true;
+				return false;
+			}
+			else if( s.length() == 4 )
+			{
+				if( s[3] == '\'' )
+					if( s[1] == '\\' )
+						return true;
+				return false;
+			}
+			else
+				return false;
+		}
+	}
+	
 	bool matchLabelDecl( const string& s )
 	{
 		unsigned off = 0;

@@ -5,6 +5,7 @@
 // such as AND, OR, NOT and XOR, in order to make room for other instructions as only 4 bits are used for OP codes.
 
 #include <vector>
+#include <string>
 
 #pragma once
 
@@ -65,6 +66,9 @@ enum Flag
 
 // take the intruction code from the instruction
 OP getInstruction( const uint32_t& instruction );
+
+// take a string and return if possible the correct 16 bits number
+uint16_t parseInputValue( std::string value );
 
 class VM
 {

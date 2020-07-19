@@ -55,7 +55,7 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 	// helper function, allow to get string from enum
 	string getTypeStr( Type type );
 
-	// get register index
+	// get register index from string
 	uint8_t getRegInd( string reg ); 
 
 	class Assembler
@@ -84,6 +84,9 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 
 		// parse decimals, binary and hexadecimal values
 		uint16_t parseValue( void ); 
+
+		// parse characters
+		char parseCharValue( void );
 
 		// check if nexts tokens can be interpreted as a dereferencement
 		bool checkForDereferencement( void );

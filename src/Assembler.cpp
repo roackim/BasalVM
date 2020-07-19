@@ -173,6 +173,46 @@ namespace Asm
 		return 0;
 	}
 
+	// parse char values	
+	char Assembler::parseCharValue( void )
+	{
+		string s = current.text;
+		string c = "";
+
+		c += s[1];
+		if( s.length() == 3 )
+		{
+			readToken();
+			return  s[1] ;
+		}
+		if( s.length() == 4 )
+		{
+			c += s[2];
+			if     ( c == "\\n" ) 
+			{
+				readToken();
+				return '\n' ;
+			}
+			else if( c == "\\t" ) 
+			{
+				readToken();
+				return '\t' ;
+			}
+			else if( c == "\\v" ) 
+			{
+				readToken();
+				return '\v' ;
+			}
+			else if( c == "\\!" ) // avoid comment
+			{
+				readToken();
+				return '!';
+			}
+			else compileError("Unrecognized character");
+		}
+		return '?' ; // unkown character
+	}
+
 	// curent token must be a ENDL, compileError and return false otherwise
 	bool Assembler::readEndl( void )
 	{
@@ -223,6 +263,7 @@ namespace Asm
 		else if( parser::matchFlag( txt ))			type = FLAG;			// try to match Flags
 		else if( parser::matchFlowCtrl( txt ))		type = FLOW;			// try to match conditions for flags
 		else if( parser::matchReg( txt ))			type = REG;				// try to match registers
+		else if( parser::matchCharValue( txt ))		type = CHAR_VALUE;		// try to match char literals ex: 'a', '\n'
 		else if( parser::matchDecimalValue( txt ))  type = DECIMAL_VALUE;	// try to match decimal values
 		else if( parser::matchHexaValue( txt ))		type = HEXA_VALUE;		// try to match hexa values
 		else if( parser::matchBinValue( txt ))		type = BINARY_VALUE;	// try to match binary values
@@ -294,7 +335,8 @@ namespace Asm
 				if( not parser::isSpace( line[i+1] )) txt += del;	
 				continue;
 			}
-			if( line[i] == '!' ) break;
+			if( line[i] == '!')
+				if( i != 0 and line[i-1] != '\\' ) break;
 			// default
 			txt += line[i];
 		}
@@ -633,10 +675,19 @@ namespace Asm
 			instruction |= static_cast<uint32_t>( src << 12 );
 			readToken(); // skip register
 		}
+		else if( current.type == CHAR_VALUE )
+		{
+			char c = parseCharValue(); 
+			instruction |= static_cast<uint16_t>( c );
+			instruction |= 0x01000000;
+		}
 		else if( current.type == ENDL )
 			return compileError("Missing operands after push instruction");
 		else
-			return compileError("Junk after pop instruction");
+		{
+			cout << getTypeStr( current.type ) << endl;
+			return compileError("Junk after push instruction");
+		}
 
 		program.push_back( instruction );
 		return true;
@@ -700,7 +751,7 @@ namespace Asm
 		}
 		else if( current.type == REG )
 		{
-			value = getRegInd(current.text);
+			reg = getRegInd( current.text );
 			readToken();
 			readComma();
 			l_mode = 2;
@@ -721,6 +772,14 @@ namespace Asm
 			readComma();
 			l_mode = 0;
 			instruction |= val;
+		}
+		else if( current.type == CHAR_VALUE ) // allow char values as left operands, ex: disp 'a', char or disp 'h', int
+		{
+			char c = parseCharValue(); 
+			readComma();
+			l_mode = 0;
+			instruction |= static_cast<uint16_t>( c );
+			instruction |= 0x01000000;
 		}
 		else
 			return compileError("Unexpected operand : '" + current.text + "'");
@@ -795,7 +854,30 @@ namespace Asm
 				return compileError("Expected input type, not '"+current.text+"'");
 
 		}
-		else if( current.type == AROBASE )
+		else if( checkForDereferencement() )
+		{
+			l_mode = 3;
+			uint8_t offset;
+			readDereferencedReg( offset, reg );
+			instruction |= offset;
+			instruction |= static_cast<uint16_t>(reg << 4);
+			readComma();
+
+			if( current.type == DISP_TYPE )
+			{
+				if( current.text == "str" or current.text == "string")
+				{
+					r_mode = 5;
+					readToken();
+				}
+				else
+					return compileError("Expected string type after address operand, not '" + current.text + "'");
+			}
+			else 
+				return compileError("Expected string type after address operand, not '" + current.text + "'");
+
+		}
+		else if( current.type == AROBASE  )
 		{
 			l_mode = 1;
 			readToken(); // read arobase
@@ -808,14 +890,14 @@ namespace Asm
 			{
 				if( current.text == "str" or current.text == "string")
 				{
-					r_mode = 3;
+					r_mode = 5;
 					readToken();
 				}
 				else
-					return compileError("Expected string type after address operand, not '"+current.text+"'");
+					return compileError("Expected string type after address operand, not '" + current.text + "'");
 			}
 			else 
-				return compileError("Expected string type after address operand, not '"+current.text+"'");
+				return compileError("Expected string type after address operand, not '" + current.text + "'");
 		}
 		else
 			return compileError("Expected registers token or adress, not '" + current.text + "'");

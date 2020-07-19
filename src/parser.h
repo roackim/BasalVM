@@ -5,7 +5,7 @@ using std::string;
 
 namespace parser
 {
-	// lower a string, allow for non-case-sensitive OP
+	// lower a string, allow for non-case-sensitive OP 
 	string to_lower( string s );
 
 	// return true if op is an instruction (not case sensitive) ex: PUSH PoP Add copy
@@ -27,6 +27,7 @@ namespace parser
 	bool matchDecimalValue( const string& s );
 	bool matchHexaValue( const string& s );
 	bool matchBinValue( const string& s );
+	bool matchCharValue( const string& s );
 	bool matchLabelDecl( const string& s );
 	bool matchLabel( const string& s );
 
