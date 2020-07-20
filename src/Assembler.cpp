@@ -137,9 +137,9 @@ namespace Asm
 		if( current.type == DECIMAL_VALUE )
 		{
 			int32_t i = atoi( value.c_str() );
-			if( i > 65536 or i < -32768 )
+			if( i > 65535 or i < -32768 )
 			{
-				compileError( "Value '" + current.text + "' is too big to be encoded" );
+				compileError( "Value '" + current.text + "' is too big to be encoded.\n\trange: [0, 65535] or [-32768, 32767]" );
 				return false;
 			}
 			readToken();
@@ -150,7 +150,7 @@ namespace Asm
 			value = value.substr( 2, value.length() - 1 ); // remove the base before number eg : 0b0101 -> 0101
 			if( value.length() > 16 )
 			{
-				compileError( "Value '" + current.text + "' is too big to be encoded" );
+				compileError( "Value '" + current.text + "' is too big to be encoded.\n\trange: [0, 65535] or [-32768, 32767]" );
 				return false;
 			}
 			long int i = std::stol( value.c_str(), nullptr, 2);
@@ -162,7 +162,7 @@ namespace Asm
 			value = value.substr( 2, value.length() - 1 ); // remove the base before number eg : 0b0101 -> 0101
 			if( value.length() > 4 )
 			{
-				compileError( "Value '" + current.text + "' is too big to be encoded" );
+				compileError( "Value '" + current.text + "' is too big to be encoded.\n\trange: [0, 65535] or [-32768, 32767]" );
 				return false;
 			}
 			long int i = std::stol( value.c_str(), nullptr, 16);
@@ -652,10 +652,57 @@ namespace Asm
 	}
 
 	// TODO function body
-	// opcode 8.  AND, OR, NOT, XOR
+	// opcode 8.  AND, OR, NOT, XOR		// only work with registers and immediate value
 	bool Assembler::parseBinBasedInstr( void )
 	{
-		return false;
+		uint32_t instruction = 0x80000000;
+
+		// Compute OP Code
+		string op = parser::to_lower( current.text );
+		if     ( op == "and" ) instruction |= 0x01000000;
+		else if( op == "or" )  instruction |= 0x02000000;
+		else if( op == "not")  instruction |= 0x03000000;
+		else if( op == "xor" ) instruction |= 0x04000000;
+
+		readToken(); // read instruction token
+
+		uint8_t l_mode   = 0; // 0: immediate value | xxxx | 2: register | xxxx
+		uint8_t l_reg	 = 0; // register index of left operand
+		uint8_t r_reg	 = 0; // ..
+
+		if( current.type == REG )
+		{
+			l_reg = getRegInd( current.text );	
+			readToken();
+			l_mode = 2;
+			instruction |= static_cast<uint32_t>( l_reg << 12 );
+		}
+		else if( current.type == DECIMAL_VALUE or current.type == HEXA_VALUE or current.type == BINARY_VALUE )
+		{
+			uint16_t imm_value = parseValue();
+			instruction |= imm_value;				// add immediate value to the last 4 bits
+			l_mode = 0;
+		} 
+		else if( current.type == AROBASE or checkForDereferencement() )
+			return  compileError("Cannot use address or dereferencement with binary operator instructions");
+		else
+			return compileError("Unexpected token");
+
+		readComma(); 
+
+		if( current.type == REG )
+		{
+			r_reg = getRegInd( current.text );	
+			instruction |= static_cast<uint32_t>( r_reg << 16 ); // after immediate value
+		}
+		else
+			return compileError("Expected register as right hand operand");
+
+		instruction |= static_cast<uint32_t>( l_mode << 20 );
+		readToken();
+		program.push_back( instruction );
+		return true;
+		
 	}
 
 	// opcode 9, PUSH

@@ -45,7 +45,7 @@ int main( int argc, char *argv[] )
 
 	vm.start();
 
-	vm.dispMemoryStack();
+	// vm.dispMemoryStack();
 
 
 	return 0;

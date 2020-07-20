@@ -528,36 +528,41 @@ void VM::executeRAND( const uint32_t& instruction )
 // Binary Operator : Either act as AND, OR, NOT or XOR, used to compress 4 instructions in 1 opcode
 void VM::executeBinBasedOP( const uint32_t& instruction ) 
 {
-	short mode		= ( instruction & 0x07000000 ) >> 24;	// mode of the instruction either AND, OR, NOT or XOR
-	short op		= ( instruction & 0x00F00000 ) >> 24;	// choose between immediate value or source register
-	short dest		= ( instruction & 0x000F0000 ) >> 20;	// destination register
-	short src		= ( instruction & 0x0000F000 ) >> 12;	// source register
+	uint16_t mode	= ( instruction & 0x0F000000 ) >> 24;	// mode of the instruction either AND, OR, NOT or XOR
+	uint16_t l_mode	= ( instruction & 0x00F00000 ) >> 20;	// choose between immediate value or source register
+	uint16_t dest	= ( instruction & 0x000F0000 ) >> 16;	// destination register
+	uint16_t src	= ( instruction & 0x0000F000 ) >> 12;	// source register
 	uint16_t value	= ( instruction & 0x0000FFFF );			// immediate value
 
 	uint16_t* dest_p = &reg[dest];
 
-	if( op == 1 ) // source register
+	if( l_mode == 2 ) // source register, not an immediate value
 	{
 		value = reg[src];
 	}
 
 	switch( mode ) // none of those operations can overflow
 	{
-		case 1:
+		case 1:	// AND
 			*dest_p &= value; 
-			updateFlags( *dest_p ); break;
+			updateFlags( *dest_p ); 
+			break;
 
-		case 2:
+		case 2:	// OR
 			*dest_p |= value;
-			updateFlags( *dest_p ); break;
+			updateFlags( *dest_p ); 
+			break;
 
-		case 3:
+		case 3: // NOT
 			*dest_p = ~(value);
-			updateFlags( *dest_p ); break;
+			updateFlags( *dest_p ); 
+			break;
 
-		case 4:
+		case 4:	// XOR
 			*dest_p ^= (value);
-			updateFlags( *dest_p ); break;
+			updateFlags( *dest_p ); 
+			break;
+
 		default:
 			Error("Unexpected value in instruction");
 			break;

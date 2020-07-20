@@ -18,8 +18,8 @@ namespace parser
 	bool matchOP( string op )
 	{
 		op = to_lower( op ); // non case sensitive op
-		return( op=="add" or op=="sub" or op=="cmp" or op=="copy" or op=="push" or op=="pop" or op=="mul" 
-			 or op=="div" or op=="mod" or op=="and" or op=="or" or op=="not" or op=="xor" or op=="jump" 
+		return( op=="add"  or op=="sub" or op=="cmp"   or op=="copy" or op=="push" or op=="pop" or op=="mul" 
+			 or op=="div"  or op=="mod" or op=="and"   or op=="or"   or op=="not"  or op=="xor" or op=="jump" 
 			 or op=="call" or op=="ret" or op=="input" or op=="disp" or op=="rand" or op=="wait" );
 	}
 
@@ -49,9 +49,7 @@ namespace parser
 
 	bool isSpace( const char& c )
 	{
-		if( c == ' ' or c == '\t' ) 
-			return true;
-		return false;
+		return( c == ' ' or c == '\t' );
 	}
 	bool isNumber( const char& c )
 	{
@@ -74,7 +72,7 @@ namespace parser
 		unsigned off = 0; // offset to start the loop approprietly ( skip special char at begining ex : -123 )
 
 		if( s[0]  == '-' ) off = 1;
-		if( not isNumber( s[off] )) return false; // must have atleast one number
+		if( not (s.length() > off )) return false; // must have atleast one number
 		for( unsigned i=off; i < s.length(); i++ )
 		{
 			if( not isNumber( s[i] )) return false; // must have atleast one number
@@ -88,7 +86,7 @@ namespace parser
 
 		if( s[0]  == '0' and s[1] == 'x') off = 2;
 		else return false;
-		if( not isHexa( s[off] )) return false; // must have atleast one number
+		if( not (s.length() > off )) return false; // must have atleast one number
 		for( unsigned i=off; i < s.length(); i++ )
 		{
 			if( not isHexa( s[i] )) return false; // must have atleast one number
@@ -102,7 +100,7 @@ namespace parser
 
 		if( s[0]  == '0' and s[1] == 'b') off = 2;
 		else return false;
-		if( s[off] != '0' and s[off] != '1' ) return false; // must have atleast one number
+		if( not (s.length() > off )) return false; // must have atleast one number
 		for( unsigned i=off; i < s.length(); i++ )
 		{
 			if(( s[i] != '0') and ( s[i] != '1')) return false; // must have atleast one number
