@@ -58,13 +58,16 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 	// get register index from string
 	uint8_t getRegInd( string reg ); 
 
+	// get CPU flag index from string
+	uint8_t getFlagInd( string flag ); 
+
 	class Assembler
 	{
 	public:
 		std::vector<uint32_t> program;			// store all the instructions
 
 	private:
-		uint64_t rsp = 0;						// pointer to next instructions while compiling, increment every time an instruction is parsed
+		uint64_t rsp = 0;						// increment every time an instruction is parsed, used to map labels to program address
 		uint64_t   j = 0;						// used to count tokens
 		uint64_t lineNbr = 1;					// one empty line is always artifially added at the begining
 		std::vector<token> tokens;				// store all tokens
@@ -111,6 +114,9 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 
 		// load a file and tokenize it
 		bool loadAndTokenize( string fileName );
+
+		// parse label declarations
+		bool parseLabelDecl( void );
 
 		// look at a token and redirect toward the appropriatre function, eg : ADD -> call parseAddBasedInstr()		
 		bool parseOneInstr( void );

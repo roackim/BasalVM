@@ -94,13 +94,10 @@ void VM::load( std::vector<uint32_t> instructionArray )
 	program = instructionArray; // should copy every element from the vector, works differently than standard array pointer
 }
 
-// execute the program
+// execute the program // TODO use ip register instead of a for loop
 void VM::start( void )
 {
-	for( unsigned i=0; i<program.size(); i++ )
-	{
-		processInstruction( program[i] );
-	}
+	while( processInstruction( program[reg[ip]] )){ ; } // stop at halt
 }
 
 // display the stack values
@@ -161,6 +158,19 @@ uint16_t VM::xorshift16( void )
 	rnd_seed = x;
 	return x;
 }
+
+// generate a 16bit random number
+// uint16_t VM::xorshift16( void )
+// {   /* Mixed algorithm from Marsaglia xorshift algorithm and other LFSR */
+// 	uint16_t x = rnd_seed;
+// 	x ^= x >> 7;
+// 	x ^= x << 9;
+// 	x ^= x >> 13;
+// 	rnd_seed = x + 1;
+// 	return x;
+// }
+
+
 
 
 //	+-----------------------------------+
@@ -586,8 +596,17 @@ void VM::executeWAIT( const uint32_t& instruction )
     // cout << "Waited " << elapsed.count() << " ms\n";
 }
 
+// contains jump, conditionnal jump, call and ret
+void VM::executeJUMP( const uint32_t& instruction )
+{
+	uint16_t mode		= ( instruction & 0x0F000000 ) >> 24;	// chose range 
+	uint16_t value		= ( instruction & 0x0000FFFF );			// choose max value
+}
+
+
+
 // redirect to the correct function depending on the instruction code contained in the first 8 bits
-void VM::processInstruction( const uint32_t& instruction )
+bool VM::processInstruction( const uint32_t& instruction )
 {
 	// get the current opcode
 	OP op = getInstruction( instruction );
@@ -595,24 +614,41 @@ void VM::processInstruction( const uint32_t& instruction )
 	switch( op )
 	{
 		case PUSH:
-			executePUSH( instruction ); break;
+			reg[ip]++; 
+			executePUSH( instruction );
+			break;
 		case POP:
-			executePOP( instruction ); break;
+			reg[ip]++;
+			executePOP( instruction ); 
+			break;
 		case BIN:
-			executeBinBasedOP( instruction ); break;
+			reg[ip]++;
+			executeBinBasedOP( instruction ); 
+			break;
 		case RAND:
-			executeRAND( instruction ); break;
+			reg[ip]++;
+			executeRAND( instruction ); 
+			break;
 		case WAIT:
-			executeWAIT( instruction ); break;
-
+			reg[ip]++;
+			executeWAIT( instruction ); 
+			break;
 		case JUMP:
-			//TODO
+			executeJUMP( instruction );
 			break;
 		case PROMPT:
-			executePROMPT( instruction ); break;
+			reg[ip]++;
+			executePROMPT( instruction ); 
+			break;
+		case HALT:
+			return false; 
+			break;
 		default :
-			executeAddBasedOP( instruction, op ); break;
+			reg[ip]++;
+			executeAddBasedOP( instruction, op ); 
+			break;
 	}
+	return true;
 }
 
 

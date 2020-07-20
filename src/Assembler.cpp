@@ -111,8 +111,24 @@ namespace Asm
 		else if( reg == "sp" ) return 8;
 		else if( reg == "ip" ) return 9;
 
+		// not supposed to happen.
 		std::cerr << "unkown register : " << reg << endl;
 		return 15;
+	}
+
+	// get CPU flag index from string
+	uint8_t getFlagInd( string flag )
+	{
+		if     ( flag == "EQU" ) return 0;	
+		else if( flag == "ZRO" ) return 1;
+		else if( flag == "POS" ) return 2;
+		else if( flag == "NEG" ) return 3;
+		else if( flag == "OVF" ) return 4;
+		else if( flag == "ODD" ) return 5;
+
+		// not supposed to happen
+		std::cerr << "unkown flag : " << flag << endl;
+		return 6;
 	}
 
 	// increment j and reassign token t
@@ -408,7 +424,9 @@ namespace Asm
 	
 		if( !tokens.empty() )
 		{
-			current = tokens[ j ];
+			
+			while( parseLabelDecl() ){}
+
 			while( parseOneInstr() )
 			{
 				if( !readEndl() )  // expect one instruction per line
@@ -425,6 +443,43 @@ namespace Asm
 		}
 	}
 
+
+	bool Assembler::parseLabelDecl( void )
+	{
+		if( current.type == LABEL_DECL ) // if token is a label declaration, verifiy if not already defined, then define it.
+		{
+			string labelStr = current.text.substr(1, current.text.size() - 1); // remove ':' char at the begining
+			std::map<string, uint16_t>::iterator itr;
+
+			// label is already defined, throw error
+			if( labels.count( current.text ) == 1 ) 
+				return compileError("Label '" + labelStr + "' already defined" );
+
+			labels.insert( std::pair<string, uint16_t>( labelStr, rsp ));	
+			readToken();
+			return true;
+		}	
+		else if( current.type == HALT )
+		{
+			j = 0;			// reset cursor
+			rsp = 0;
+			current = tokens[ j ];
+			return false;	// stop
+		}
+		else if( current.type == OP )
+		{
+			readToken();
+			rsp++;
+			return true;
+		}
+		else
+		{
+			readToken();
+		   	return true;
+		}
+		return false; // avoid warnings
+	}
+
 	// parse one instruction from the token array
 	bool Assembler::parseOneInstr( void )
 	{
@@ -434,33 +489,20 @@ namespace Asm
 			return true;
 		}
 		if( current.type == ENDL ) 
-			return true; // do nothing
-
-		if( current.type == HALT )
 		{
+			return true; // do nothing
+		}
+		else if( current.type == HALT )
+		{
+			program.push_back( 0xF0000000 ); // halt instruction
 			return false; // stop compiling (might not be usefull)
 		}
-
-		if( current.type == LABEL_DECL ) // if token is a label declaration, verifiy if not already defined, then define it.
+		else if( current.type == LABEL_DECL ) // skip, already parsed by parseLabelDecl()
 		{
-			string labelStr = current.text.substr(1, current.text.size() - 1);
-			std::map<string, uint16_t>::iterator itr;
-			for( itr = labels.begin(); itr != labels.end(); ++itr )
-			{
-				if( itr->first == labelStr ) // label already defined
-				{
-				compileError("Label '" + labelStr + "' already defined" );
-					return false;
-				}
-			}
-			labels.insert( std::pair<string, uint16_t>( labelStr, rsp ));	
 			readToken();
 			return true;
 		}
-		if( current.type == HALT )
-			return false;
-
-		if( current.type == OP )
+		else if( current.type == OP )
 		{
 			string op = parser::to_lower( current.text );
 
@@ -769,6 +811,29 @@ namespace Asm
 	// opcode 11, JUMP, CALL, RET
 	bool Assembler::parseJumpBasedInstr( void )
 	{
+		string op = parser::to_lower( current.text );
+		if( op == "jump" )
+		{
+			readToken();
+			if( current.type == LABEL )
+			{
+				if( labels.count( current.text ) == 1 ) // the label exists
+				{
+					readToken();
+					return true;
+				}	
+				else
+					return compileError("Undeclared jump address");
+			}
+		}
+		else if( op == "call" )
+		{
+
+		}
+		else if( op == "ret" )
+		{
+
+		}
 		return false;
 	}
 
@@ -978,15 +1043,16 @@ namespace Asm
 
 		if( current.type == REG )
 		{
+			uint16_t reg = getRegInd( current.text );
+			instruction |= static_cast<uint32_t>( reg << 20 );
 			readToken();
 			if( current.type == COMMA ) // rand ax, 265     ax -> rand(0, 256)
 			{
 				instruction |= 0x02000000; // mode
 				readComma();
-				uint16_t max_value = parseValue();  // does not increment j (maybe it should ?)
+				uint16_t max_value = parseValue();
 				instruction |= max_value;  // immediate value
 
-				readToken(); // skip immediate value, go to next token
 				program.push_back( instruction ); // store instruction
 				return true;
 			}
@@ -996,10 +1062,10 @@ namespace Asm
 				return true;
 			}
 			else
-				return compileError("junk after rand instruction, maybe a comma is missing between operands");
+				return compileError("Junk after rand instruction, maybe a comma is missing between operands");
 		}
 		else
-			return compileError("expected register after rand instruction" );
+			return compileError("Expected register after rand instruction" );
 
 		return false;
 	}

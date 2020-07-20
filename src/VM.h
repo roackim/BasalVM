@@ -45,7 +45,8 @@ enum OP
 	JUMP,		// 	.11			// contains CALL and RET 
 	PROMPT,		// 	.12			// act as both a cout and a cin depending on the mode
 	RAND,		//  .13
-	WAIT		//  .14			// implementation must depend on the context
+	WAIT,		//  .14			// implementation must depend on the context
+	HALT		//	.15			// halt programm execution
 };
 
 //    -- CPU Flags --
@@ -158,7 +159,7 @@ private:
 	void executeJUMP( const uint32_t& instruction );
 
 	// redirect to the correct function depending on the instruction code contained in the first 8 bits
-	void processInstruction( const uint32_t& instruction );
+	bool processInstruction( const uint32_t& instruction );
 
 
 //	+------------------------------+
