@@ -1,18 +1,23 @@
 #include <string>
 #include "parser.h"
-#include <algorithm>
+#include <iostream>
 
 using std::string;
 
 namespace parser
 {
-	// lower a string, allow for non-case-sensitive OP
-	string to_lower( string s ) 
+	// return lower cased string
+	string to_lower( string s )
 	{
-		std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c)
-			{ return std::tolower(c); } // correct
-					  );
-		return s;
+		string low = s;
+		for( unsigned i=0; i<s.length(); i++ )
+		{
+			if( s[i] >= 'A' and s[i] <= 'Z' )
+			{
+				low[i] += 32;
+			}
+		}
+		return low;
 	}
 
 	bool matchOP( string op )
@@ -55,7 +60,8 @@ namespace parser
 	{
 		return( c >= '0' and c <= '9' );
 	}
-	bool isAlphaNumerical( const char& c ) 	{
+	bool isAlphaNumerical( const char& c )
+	{
 		return(( c >= 'a' and c <= 'z') or ( c >= 'A' and c <= 'Z' ) or ( c >= '0' and c <= '9'));
 	}
 	bool isAlpha( const char& c )
