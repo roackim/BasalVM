@@ -43,12 +43,11 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 	public:
 		string text;
 		Type type = UNKNOWN;
-		token( string s, Type t )
+		token( const string& s, Type t )
 		: text( s )
 		, type( t ) { }
 		token()
 		{
-			text = ""; type = UNKNOWN;
 		}
 	};
 
@@ -56,10 +55,10 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 	string getTypeStr( Type type );
 
 	// get register index from string
-	uint8_t getRegInd( string reg ); 
+	uint8_t getRegInd( const string& reg ); 
 
 	// get CPU flag index from string
-	uint8_t getFlagInd( string flag ); 
+	uint8_t getFlagInd( const string& flag ); 
 
 	class Assembler
 	{
@@ -92,7 +91,7 @@ namespace Asm // keep things contained in a namespace.  basm = Basal Assembly
 		char parseCharValue( void );
 
 		// check if nexts tokens can be interpreted as a dereferencement
-		bool checkForDereferencement( void );
+		bool checkForDereferencement( void ) const;
 
 		// read and expect a dereferenced register
 		bool readDereferencedReg( uint8_t& offset, uint8_t& reg );

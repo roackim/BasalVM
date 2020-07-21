@@ -4,7 +4,7 @@
 
 using std::string;
 
-void Error( std::string message ) // TODO Subject to change !
+void Error( const std::string& message ) // TODO Subject to change !
 {
 	std::cerr << "/!\\ Error : " << message << ". \nTerminating the program." << std::endl;
 	exit( -1 );

@@ -1,65 +1,9 @@
-// This code has been written by Joackim Orciere.
-// the goal is to simulate a 16 bit CPU through a virtual machine and a custom set of (32 bits) instructions
-// certains instruction allow for dereferencing, such as ADD, SUB, CMP, COPY, MUL, DIV and MOD.
-// certains others instructions have been factorized inside a single instruction code
-// such as AND, OR, NOT and XOR, in order to make room for other instructions as only 4 bits are used for OP codes.
-
+#pragma once
 #include <vector>
 #include <string>
 
-#pragma once
+#include "basmDefinition.h"
 
-//	+------------------------------------+
-//	|    Enums used for code clarity     |
-//	+------------------------------------+
-//    -- Registers --
-enum Reg
-{
-	ax = 0,
-	bx,
-	cx,
-	dx,
-	ex,
-	fx,
-	si,	
-	di,
-	sp,		// 8.
-	ip,		// 9.
-	R_COUNT
-};
-
-//    -- OP codes --
-enum OP				
-{
-	IO = 0,		//	.0			// used to communicate with outside the VM, not implemented yet
-	ADD,		// 	.1			// Addition
-	SUB,		// 	.2			// Substraction
-	COPY,		// 	.3			// Copy
-	CMP,		//  .4			// Comparison
-	MUL,		// 	.5			// Multiplication		ex :  MUL 5, ax			C : ax *= 5;
-	DIV,		// 	.6			// Division
-	MOD,		// 	.7			// Modulus
-	BIN,		// 	.8			// contains AND, OR, NOT and XOR
-	PUSH,		// 	.9
-	POP,		// 	.10			
-	JUMP,		// 	.11			// contains CALL and RET 
-	PROMPT,		// 	.12			// act as both a cout and a cin depending on the mode
-	RAND,		//  .13
-	WAIT,		//  .14			// implementation must depend on the context
-	HALT		//	.15			// halt programm execution
-};
-
-//    -- CPU Flags --
-enum Flag
-{
-	EQU = 0,
-	ZRO,
-	POS,
-	NEG,
-	OVF,
-	ODD,
-	F_COUNT
-};
 
 //	+---------------------------+
 //	|    Virtual Machine Class  |
@@ -90,7 +34,7 @@ private:
 	// no program size limit, dinamic array for less memory impact on average
 	std::vector<uint32_t> program;
 	// amount of reserved space in memory ( maybe useful for later ? )
-	const uint16_t RESERVED_SPACE = 0;
+	const uint16_t RESERVED_SPACE = 1;
 	// array containing the CPU flags, access like flags[ZRO]
 	bool flags[ F_COUNT ];
 	// used to generate random numbers
@@ -108,7 +52,7 @@ public:
 	void initialize( void );
 
 	// load instructions in program vector from another vector (passed by the compiler)
-	void load( std::vector<uint32_t> instructionArray );
+	void load( const std::vector<uint32_t>& instructionArray );
 
 	// execute the program
 	void start( void );
@@ -122,7 +66,7 @@ public:
 
 private:
 	// check if the address is RESERVED
-	void checkForSegfault( const uint16_t& address );
+	void checkForSegfault( const uint16_t& address ) const;
 
 	// generate a 16bit random number
 	uint16_t xorshift16( void );

@@ -89,7 +89,7 @@ void VM::initialize( void )
 }
 
 // load instructions in program vector from another vector (passed by the compiler)
-void VM::load( std::vector<uint32_t> instructionArray )
+void VM::load( const std::vector<uint32_t>& instructionArray )
 {
 	program = instructionArray; // should copy every element from the vector, works differently than standard array pointer
 }
@@ -105,7 +105,7 @@ void VM::dispMemoryStack( bool showReserved ) const
 {
 	cout << "\n┌────────────────────┐\n│ -- Memory Stack    │" << endl;
 
-	for( int i = reg[sp]; i >= RESERVED_SPACE and i >=0 ; i-- )
+	for( int32_t i = reg[sp]; i >= RESERVED_SPACE; i-- )
 	{
 		int16_t value = static_cast<int16_t>(memory[i]);
 		unsigned s = 11 - std::to_string( value ).length(); 
@@ -120,7 +120,7 @@ void VM::dispMemoryStack( bool showReserved ) const
 		cout << value << "  │" << endl;
 	}
 	cout << "│ -- Reserved Memory │" << endl;
-	if( showReserved and RESERVED_SPACE > 0)
+	if( showReserved and RESERVED_SPACE > 0) // only display reserved memory if there actually is reserved memory
 	{
 		for( int i = RESERVED_SPACE-1; i >= 0; i-- )
 		{
@@ -138,7 +138,7 @@ void VM::dispMemoryStack( bool showReserved ) const
 }
 
 // check if the address is RESERVED
-void VM::checkForSegfault( const uint16_t& address )
+void VM::checkForSegfault( const uint16_t& address ) const
 {
 	if( address < RESERVED_SPACE )
 	{
@@ -392,10 +392,10 @@ void VM::executePROMPT( const uint32_t& instruction )
 				cout << static_cast<int16_t>( src_value ) << flush;
 				break;
 			case 2: // mem
-				cout << static_cast<uint16_t>( src_value ) << flush;
+				cout << src_value << flush;
 				break;
 			case 3: // hex
-				cout << std::hex << std::uppercase << static_cast<uint16_t>( src_value ) << std::dec << flush;
+				cout << std::hex << std::uppercase << src_value << std::dec << flush;
 				break; 
 			case 4: // bin
 			{
@@ -410,10 +410,11 @@ void VM::executePROMPT( const uint32_t& instruction )
 				
 				string mess = "";
 				uint16_t cursor = address; // initialize at start of string
-				while( memory[ cursor ] != 0 and cursor < UINT16_MAX )
+				while( memory[ cursor ] != 0 )
 				{
 					mess += static_cast<char>( memory[cursor] );
-					cursor += 1;
+					if( cursor < UINT16_MAX ) // avoid overflow
+						cursor += 1;
 				}
 				cout << mess << flush ;
 				break;
@@ -470,7 +471,7 @@ void VM::executePROMPT( const uint32_t& instruction )
 			{
 				uint16_t input_value;
 				cin >> input_value;
-				*src_p = static_cast<uint16_t>( input_value );
+				*src_p = input_value;
 				break;
 			}
 			case 3: // hex
@@ -482,7 +483,7 @@ void VM::executePROMPT( const uint32_t& instruction )
 					input_value = parseInputValue( input_string );
 				else
 					input_value = 0;
-				*src_p = static_cast<uint16_t>( input_value );
+				*src_p = input_value ;
 				break; 
 			}
 			case 4: // bin
@@ -494,7 +495,7 @@ void VM::executePROMPT( const uint32_t& instruction )
 					input_value = parseInputValue( input_string );
 				else
 					input_value = 0;
-				*src_p = static_cast<uint16_t>( input_value );
+				*src_p = input_value;
 				break; 
 			}
 			case 5: // str

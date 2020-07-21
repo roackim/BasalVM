@@ -29,7 +29,7 @@ namespace parser
 	}
 
 	// return true if op is a flag from basm, case sensitive ( flags are uppercased eg : EQU, ZRO )
-	bool matchFlag( string op )
+	bool matchFlag( const string& op )
 	{
 		// string flaglist = "EQU|ZRO|POS|NEG|OVF|ODD";
 		return(  op=="EQU" or op=="ZRO" or op=="POS" or op=="NEG" or op=="OVF" or op=="ODD" );
@@ -45,7 +45,7 @@ namespace parser
 	}
 
 
-	bool matchReg( string op )
+	bool matchReg( const string& op )
 	{
 		// string oplist = "ax|bx|cx|dx|ex|fx|di|si|ip|sp";
 		return( op=="ax" or op=="bx" or op=="cx" or op=="dx" or op=="ex" or op=="fx" or op=="di" or op=="si" or op=="ip" or op=="sp" );

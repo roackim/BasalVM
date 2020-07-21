@@ -98,7 +98,7 @@ namespace Asm
 	}
 
 	// get register index
-	uint8_t getRegInd( string reg )
+	uint8_t getRegInd( const string& reg )
 	{
 		if     ( reg == "ax" ) return 0;	
 		else if( reg == "bx" ) return 1;
@@ -117,7 +117,7 @@ namespace Asm
 	}
 
 	// get CPU flag index from string
-	uint8_t getFlagInd( string flag )
+	uint8_t getFlagInd( const string& flag )
 	{
 		if     ( flag == "EQU" ) return 0;	
 		else if( flag == "ZRO" ) return 1;
@@ -330,13 +330,6 @@ namespace Asm
 				if( not parser::isSpace( line[i+1] )) txt += del;	
 				continue;
 			}
-			else if( line[i] == ',' )
-			{
-				if( txt[txt.length()-1] != del ) txt += del;
-				txt += ',';
-				if( not parser::isSpace( line[i+1] )) txt += del;	
-				continue;
-			}
 			else if( line[i] == '(' )
 			{
 				if( txt[txt.length()-1] != del ) txt += del;
@@ -396,8 +389,7 @@ namespace Asm
 
 			while(rfile.getline( line, 120 ))	// tokenize whole line for every lines
 			{
-				string s = line;
-				s = removeSpace( line );
+				string s = removeSpace( line );
 				while( getOneToken( s ) ){ }
 			}
 		}
@@ -449,7 +441,6 @@ namespace Asm
 		if( current.type == LABEL_DECL ) // if token is a label declaration, verifiy if not already defined, then define it.
 		{
 			string labelStr = current.text.substr(1, current.text.size() - 1); // remove ':' char at the begining
-			std::map<string, uint16_t>::iterator itr;
 
 			// label is already defined, throw error
 			if( labels.count( current.text ) == 1 ) 
@@ -530,7 +521,7 @@ namespace Asm
 	}
 
 	// helper function
-	bool Assembler::checkForDereferencement( void )
+	bool Assembler::checkForDereferencement( void ) const
 	{
 		if( current.type == DECIMAL_VALUE and tokens[ j + 1 ].type == LPAREN )
 			return true;
@@ -709,12 +700,10 @@ namespace Asm
 		readToken(); // read instruction token
 
 		uint8_t l_mode   = 0; // 0: immediate value | xxxx | 2: register | xxxx
-		uint8_t l_reg	 = 0; // register index of left operand
-		uint8_t r_reg	 = 0; // ..
 
 		if( current.type == REG )
 		{
-			l_reg = getRegInd( current.text );	
+			uint8_t l_reg = getRegInd( current.text );	
 			readToken();
 			l_mode = 2;
 			instruction |= static_cast<uint32_t>( l_reg << 12 );
@@ -734,7 +723,7 @@ namespace Asm
 
 		if( current.type == REG )
 		{
-			r_reg = getRegInd( current.text );	
+			uint8_t r_reg = getRegInd( current.text );	
 			instruction |= static_cast<uint32_t>( r_reg << 16 ); // after immediate value
 		}
 		else
@@ -787,7 +776,6 @@ namespace Asm
 	{
 		uint32_t instruction = 0xA0000000;
 		readToken(); // skip pop token
-		token t = tokens[j];
 		if( current.type == REG ) // pop to a register
 		{
 			int dest = getRegInd( current.text );	
@@ -806,6 +794,7 @@ namespace Asm
 		program.push_back( instruction );
 		return true;
 	}
+
 
 	// TODO
 	// opcode 11, JUMP, CALL, RET
@@ -847,7 +836,6 @@ namespace Asm
 		uint8_t r_mode = 0;	// display mode, 0: char | 1: integer | 2: address (unsigned int) | 3: string
 		uint8_t reg	   = 0;
 		uint8_t offset = 0;		
-		uint16_t value = 0;
 
 		readToken(); // skip disp token
 
@@ -855,7 +843,7 @@ namespace Asm
 		if( current.type == AROBASE )	// disp @256, char  
 		{
 			readToken();				// skip @ token
-			value = parseValue();		// expect a value after @ symbol
+			uint16_t value = parseValue();		// expect a value after @ symbol
 			readComma();				// expect a comma
 			l_mode = 1;
 			instruction |= value;
@@ -935,7 +923,6 @@ namespace Asm
 		uint8_t l_mode = 0; // source mode 0: immediate value | 1: address | 2: register 
 		uint8_t r_mode = 0; // dest   mode 0: char | 1: int | 2: mem | 3: str	
 		uint8_t reg	   = 0;
-		uint16_t value = 0;
 
 		readToken(); // read input token
 
@@ -955,11 +942,8 @@ namespace Asm
 				else if( current.text == "mem" ) r_mode = 2;
 				else if( current.text == "hex" ) r_mode = 3;
 				else if( current.text == "bin" ) r_mode = 4;
-				else if( current.text == "str" )
-				{ 
-					r_mode = 5;
+				else if( current.text == "str" ) // not usable with a register destination
 					return compileError("Cannot use string input with a register");
-				}
 				readToken();
 			}
 			else
@@ -993,7 +977,7 @@ namespace Asm
 		{
 			l_mode = 1;
 			readToken(); // read arobase
-			value = parseValue(); // read address value, and store it
+			uint16_t value = parseValue(); // read address value, and store it
 			readComma();
 
 			instruction |= value;
