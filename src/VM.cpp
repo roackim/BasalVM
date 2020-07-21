@@ -97,7 +97,10 @@ void VM::load( const std::vector<uint32_t>& instructionArray )
 // execute the program // TODO use ip register instead of a for loop
 void VM::start( void )
 {
-    while( processInstruction( program[reg[ip]] )){ ; } // stop at halt
+    while( processInstruction( program[reg[ip]] ))
+    { 
+        // cout << "ip: " << reg[ip] << "\t" << program[reg[ip]] << endl;
+    } 
 }
 
 // display the stack values
@@ -183,13 +186,13 @@ uint16_t VM::xorshift16( void )
 void VM::executeAddBasedOP( const uint32_t& instruction, OP op )
 {
     // 4 bits for sign and offset : 1bit of sign, 3bits of offset value, offset therefore range from -7 to 7
-    uint8_t  mode       = ( instruction & 0x0F000000 ) >> 24;   // mode of the instruction
-    uint8_t  dest       = ( instruction & 0x00F00000 ) >> 20;   // destination register
+    uint16_t  mode       = ( instruction & 0x0F000000 ) >> 24;   // mode of the instruction
+    uint16_t  dest       = ( instruction & 0x00F00000 ) >> 20;   // destination register
     bool     dest_sign  = ( instruction & 0x00080000 ) >> 19;   // destination offset sign
-    uint8_t  dest_off   = ( instruction & 0x00070000 ) >> 16;   // destination offset
-    uint8_t  src        = ( instruction & 0x000000F0 ) >>  4;   // source register
+    uint16_t  dest_off   = ( instruction & 0x00070000 ) >> 16;   // destination offset
+    uint16_t  src        = ( instruction & 0x000000F0 ) >>  4;   // source register
     bool     src_sign   = ( instruction & 0x00000008 ) >>  0;   // source offset sign
-    uint8_t  src_off    = ( instruction & 0x00000007 ) >>  0;   // source offset
+    uint16_t  src_off    = ( instruction & 0x00000007 ) >>  0;   // source offset
     uint16_t src_value  = ( instruction & 0x0000FFFF );         // immediate value or address
     uint16_t dest_value = ( instruction & 0x00FFFF00 ) >>  8;   // immediate address
 
@@ -216,7 +219,7 @@ void VM::executeAddBasedOP( const uint32_t& instruction, OP op )
             checkForSegfault( address ); break; 
 
         case 2:     // register
-            src_p = &reg[dest]; break;
+            src_p = &reg[src]; break;
 
         case 3:     // dereferenced register
             address = reg[src] + coef(src_sign) * src_off;  
@@ -273,7 +276,7 @@ void VM::executeAddBasedOP( const uint32_t& instruction, OP op )
 
         case CMP: // same as sub except dest operand is unchanged 
             updateSubOverflow( *dest_p, src_value );
-            updateFlags( *dest_p - src_value );
+            updateCmpFlags( *dest_p, src_value ); // replace normal updateFlags, because here destination is unchanged.
             break;
 
         case MUL:
@@ -600,11 +603,28 @@ void VM::executeWAIT( const uint32_t& instruction )
 void VM::executeJUMP( const uint32_t& instruction )
 {
     uint16_t mode   = ( instruction & 0x0F000000 ) >> 24;   // select operator( unconditionnal jump, call, ret or conditionnal jump )
-    uint8_t negCond = ( instruction & 0x00F00000 ) >> 20;   // choose the sign of the condition ( 0: if | 1: ifnot )
-    uint8_t cpuFlag = ( instruction & 0x00F00000 ) >> 16;   // cpu flag used as condition
+    bool      sign  = ( instruction & 0x00F00000 ) >> 20;   // choose the sign of the condition ( 0: if | 1: ifnot )
+    uint8_t cpuFlag = ( instruction & 0x000F0000 ) >> 16;   // cpu flag used as condition
+    uint16_t value  = ( instruction & 0x0000FFFF );         // destination address 
 
+    if( mode == 0 ) // unconditionnal jump
+    {
+       reg[ip] = value; 
+    }
+    else if( mode == 3 ) // conditionnal jump
+    {
+        if( sign == false ) // ifnot
+        {
+            if( not flags[ cpuFlag ] )
+                reg[ip] = value;
+        }
+        if( sign == true )
+        {
+            if( flags[ cpuFlag ] )
+                reg[ip] = value;
+        }
+    }
 
-    uint16_t value  = ( instruction & 0x0000FFFF );         // choose max value
 }
  
 
@@ -638,6 +658,7 @@ bool VM::processInstruction( const uint32_t& instruction )
             executeWAIT( instruction ); 
             break;
         case JUMP:
+            reg[ip]++;
             executeJUMP( instruction );
             break;
         case PROMPT:
@@ -672,23 +693,51 @@ void VM::dispFlagsRegister( void ) const
 }
 
 // update every flag except Overflow since it needs operands value.  ZRO and EQU flags are identical in practice.
-void VM::updateFlags( const uint16_t& value, bool cmp )
+void VM::updateFlags( const uint16_t& value )
 {
     int16_t val = static_cast<int16_t>( value );
+
     flags[NEG] = 0;
     flags[POS] = 0;
+    flags[ZRO] = 0;
+    flags[EQU] = 0;
+
     if( val == 0 )
     {
         flags[ZRO] = 1;
-        if( cmp == true )
-            flags[EQU] = 1;
+        flags[EQU] = 1;
     }
     else if( val < 0 )
         flags[NEG] = 1;
-    else
+    else if( val > 0 )
         flags[POS] = 1;
 
     flags[ODD] = val % 2;
+}
+
+// update flags for cmp because destination is unchanged, ( OVF flag is unchanged )
+void VM::updateCmpFlags( const uint16_t& dest, const uint16_t& src )
+{
+    int16_t dest_val = static_cast<int16_t>( dest );
+    int16_t src_val  = static_cast<int16_t>( src  );
+    int16_t result = dest_val - src_val;
+
+    flags[NEG] = 0;
+    flags[POS] = 0;
+    flags[ZRO] = 0;
+    flags[EQU] = 0;
+
+    if( result == 0 )
+    {
+        flags[ZRO] = 1;
+        flags[EQU] = 1;
+    }
+    else if( result < 0 )
+        flags[NEG] = 1;
+    else if( result > 0 )
+        flags[POS] = 1;
+
+    flags[ODD] = result % 2;
 }
 
 // check if you can get back to the operand from the result, if not, result has overflowed

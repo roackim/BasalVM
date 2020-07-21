@@ -45,7 +45,7 @@ int main( int argc, char *argv[] )
     // cout << "\nAssembled :" << endl;
     // for( unsigned i=0; i<basm.program.size(); i++)
     // {
-    //  cout << "\t" << std::hex << std::uppercase << basm.program[i] << std::dec << endl;
+    //    cout << "\t" << std::hex << std::uppercase << basm.program[i] << std::dec << endl;
     // }
     // cout << endl;
     
@@ -57,6 +57,8 @@ int main( int argc, char *argv[] )
     vm.initialize();
     vm.load( basm.program );
     vm.start();
+
+    // vm.dispFlagsRegister();
 
     // end chrono
     end = std::chrono::high_resolution_clock::now();

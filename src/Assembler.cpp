@@ -603,9 +603,9 @@ namespace Asm
         uint8_t l_mode   = 0; // 0: immediate value | 1: address | 2: register | 3: dereferenced register
         uint8_t r_mode   = 0; // 0: this mode is not possible (destination operand), all other are possible
         uint8_t l_offset = 0; // offset of left operand
-        uint8_t l_reg     = 0; // register index of left operand
+        uint8_t l_reg    = 0; // register index of left operand
         uint8_t r_offset = 0; // ..
-        uint8_t r_reg     = 0; // ..
+        uint8_t r_reg    = 0; // ..
 
         // branch on address as left operand ex: add @150, 34
         if( current.type == AROBASE )
@@ -818,15 +818,16 @@ namespace Asm
 
                     if( current.type == ENDL ) // avoid being catched by else statement
                     {
+                        // instruction == 0xB000@@@@
                         instruction |= 0x00000000; // useless, but put for code clarity
                         //                ^ 0 here means it is a non conditionnal juml
                     }
                     else if( current.type == COND ) // either 'if' or 'ifnot'
                     {
                         instruction |= 0x03000000; // 3 means it is a conditionnal jump
-                        if( current.text == "ifnot" ) 
+                        if( current.text == "if" ) 
                         {
-                            instruction |= 0x00100000; // 0 by default ( jump .. if .. )
+                            instruction |= 0x00100000; // 1 by default ex: jump .. if EQU | 0: if negated ex: jump .. ifnot ZRO
                         }
                         readToken();
                         if( current.type == CPUFLAG )

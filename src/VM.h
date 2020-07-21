@@ -114,7 +114,10 @@ private:
 
     // update every flag except Overflow since it needs operands value. Special case for EQU and ZRO see below
     // sub_or_cmp : false for sub (ZRO flag) and true for cmp (EQU flag)
-    void updateFlags( const uint16_t& value, bool cmp = false );
+    void updateFlags( const uint16_t& value );
+
+    // update flags for cmp because destination is unchanged, ( OVF flag is unchanged )
+    void updateCmpFlags( const uint16_t& dest, const uint16_t& src );
 
     // check if you can get back to the operand from the result, if not, result has overflowed
     void updateAddOverflow( const uint16_t& dest, const uint16_t& src );
