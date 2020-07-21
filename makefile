@@ -21,9 +21,10 @@ CMP_FLAGS ?= $(CPP_FLAGS) -MMD -MP
 
 # linking files
 $(BIN_DIR)/$(TARGET_EXEC): $(OBJS)
-	@echo Linking object files..
+	@echo Linking object files ...
 	@$(MKDIR_P) $(dir $@)
 	@$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+	@echo Build complete.
 
 
 
@@ -33,7 +34,6 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	@$(MKDIR_P) $(dir $@)
 	@$(CXX) $(CMP_FLAGS) -c $< -o $@
 	@echo $(CXX) -Wall -Wextra ... -c $< -o $@
-	@echo -e "-- Static Analysis -- "
 	@cppclean $<
 	@cppcheck $<
 
@@ -43,9 +43,9 @@ flags:
 
 .PHONY: clean
 
-analyse:
+analyse: # analyse every source files, with maximum warnings on cppcheck
 	@cppclean $(SRC_DIRS)
-	cppcheck --enable=all --inconclusive --library=posix $(SRC_DIRS)
+	@cppcheck --enable=all --inconclusive --library=posix $(SRC_DIRS)
 
 clean:
 	$(RM) -r $(BUILD_DIR)
