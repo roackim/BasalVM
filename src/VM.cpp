@@ -99,7 +99,7 @@ void VM::start( void )
 {
     while( processInstruction( program[reg[ip]] ))
     { 
-        // cout << "ip: " << reg[ip] << "\t" << program[reg[ip]] << endl;
+        // cout << std::hex << std::uppercase <<  program[reg[ip]] <<  std::dec <<endl;
     } 
 }
 
@@ -611,6 +611,15 @@ void VM::executeJUMP( const uint32_t& instruction )
     {
        reg[ip] = value; 
     }
+    else if( mode == 1 ) // call
+    {
+        executePUSH(0x90009000); // push ip
+        reg[ip] = value;         // ip already points to the next instruction
+    }
+    else if( mode == 2 ) // ret
+    {
+        executePOP(0xA0900000);
+    }
     else if( mode == 3 ) // conditionnal jump
     {
         if( sign == false ) // ifnot
@@ -622,6 +631,25 @@ void VM::executeJUMP( const uint32_t& instruction )
         {
             if( flags[ cpuFlag ] )
                 reg[ip] = value;
+        }
+    }
+    else if( mode == 4 ) // conditionnal call
+    {
+        if( sign == false ) // ifnot
+        {
+            if( not flags[ cpuFlag ] )
+            {
+                executePUSH(0x90009000); // push ip
+                reg[ip] = value;         // ip already points to the next instruction
+            }
+        }
+        if( sign == true )
+        {
+            if( flags[ cpuFlag ] )
+            {
+                executePUSH(0x90009000); // push ip
+                reg[ip] = value;         // ip already points to the next instruction
+            }
         }
     }
 

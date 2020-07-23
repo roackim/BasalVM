@@ -7,7 +7,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-const bool DISP_TIME = true;
+const bool DISP_TIME = false;
 
 int main( int argc, char *argv[] )
 {
@@ -44,12 +44,12 @@ int main( int argc, char *argv[] )
 
     // For Debugging purposes
 
-    cout << "\nAssembled :" << endl;
-    for( unsigned i=0; i<basm.program.size(); i++)
-    {
-       cout << "\t" << std::hex << std::uppercase << basm.program[i] << std::dec << endl;
-    }
-    cout << endl;
+    // cout << "\nAssembled :" << endl;
+    // for( unsigned i=0; i<basm.program.size(); i++)
+    // {
+    //    cout << "\t" << std::hex << std::uppercase << basm.program[i] << std::dec << endl;
+    // }
+    // cout << endl;
     
     // start chrono 
     start = std::chrono::high_resolution_clock::now();
@@ -61,6 +61,7 @@ int main( int argc, char *argv[] )
     vm.start();
 
     // vm.dispFlagsRegister();
+    // vm.dispMemoryStack();
 
     // end chrono
     end = std::chrono::high_resolution_clock::now();

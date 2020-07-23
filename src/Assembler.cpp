@@ -80,7 +80,7 @@ namespace Asm
             case 14:
                 return "endl";
             case 15:
-                return "halt";
+                return "stop";
             case 16:
                 return "time";
             case 17:
@@ -229,10 +229,10 @@ namespace Asm
                 readToken();
                 return ',';
             }
-            else if( c == "\\!" ) // avoid comment
+            else if( c == "\\#" ) // avoid comment
             {
                 readToken();
-                return '!';
+                return '#';
             }
             else compileError("Unrecognized character");
         }
@@ -354,7 +354,7 @@ namespace Asm
                 if( not parser::isSpace( line[i+1] )) txt += del;    
                 continue;
             }
-            else if( line[i] == '!')
+            else if( line[i] == '#')
             {
                 if( i != 0 and line[i-1] != '\\' ) break;
                 else if( i == 0 ) break;
@@ -837,7 +837,7 @@ namespace Asm
                     {
                         // instruction == 0xB000@@@@
                         instruction |= 0x00000000; // useless, but put for code clarity
-                        //                ^ 0 here means it is a non conditionnal juml
+                        //                ^ 0 here means it is a non conditionnal jump
                     }
                     else if( current.type == COND ) // either 'if' or 'ifnot'
                     {
@@ -874,16 +874,39 @@ namespace Asm
             {
                 if( declared_labels.count( current.text ) == 1 ) // the label has been declared
                 {
+
                     uint16_t address = declared_labels[ current.text ]; // get the instruction address
-
-                    instruction |= 0x90009000;  // push ip
-                    program.push_back( instruction );
-
-                    instruction = 0x32900000;        // copy immediate, reg
                     instruction |= address;
-                    program.push_back( instruction ); // copy address, ip
-                    
-                    readToken();
+
+                    readToken();   
+
+                    if( current.type == ENDL )// avoid being catched by else statement
+
+                    {
+                        instruction |= 0x01000000; // 1 means it is a call instruction    ;
+                    }                     
+                    else if( current.type == COND ) // either 'if' or 'ifnot'
+                    {
+                        instruction |= 0x04000000; // 4 means it is a conditionnal call
+                        if( current.text == "if" ) 
+                        {
+                            instruction |= 0x00100000; // 1 by default ex: jump .. if EQU | 0: if negated ex: jump .. ifnot ZRO
+                        }
+
+                        readToken();
+                        if( current.type == CPUFLAG )
+                        {
+                            uint8_t flag_ind = getFlagInd( current.text );
+                            instruction |= static_cast<uint32_t>(flag_ind << 16 );
+                            readToken();
+                        }
+                        else
+                            return compileError("Expected CPU flag after 'if' or 'ifnot'");
+                    }
+                    else
+                        return compileError("Unexpected token");
+                    // return true in both case ( conditionnal or unconditionnal )
+                    program.push_back( instruction );
                     return true;
                 }
                 else
@@ -894,14 +917,17 @@ namespace Asm
         }
         else if( op == "ret" )
         {
-
+            readToken();
+            instruction |= 0x02000000;  // ret  = pop ip
+            program.push_back( instruction );
+            return true;
         }
         return false;
     }
 
 
 
-    // Called by parsePromptInstr
+    // Called by parsePromptInstr 
     bool Assembler::parseDispInstr( void )
     {
         uint32_t instruction = 0xC1000000; // 1 for disp and 2 for input
