@@ -141,7 +141,7 @@ namespace Asm
         }
         else
         {
-            current = token("End of file", HALT );
+            current = token("End of file", STOP );
             return false;
         }
     }
@@ -416,7 +416,7 @@ namespace Asm
 
         }
         rfile.close();
-        token last_token("HALT", HALT); 
+        token last_token("STOP", STOP); 
         tokens.push_back( last_token );
         return true;
     }
@@ -457,14 +457,14 @@ namespace Asm
             string labelStr = current.text.substr(1, current.text.size() - 1); // remove ':' char at the begining
 
             // label is already defined, throw error
-            if( labels.count( current.text ) == 1 ) 
+            if( declared_labels.count( current.text ) == 1 ) 
                 return compileError("Label '" + labelStr + "' already defined" );
 
-            labels.insert( std::pair<string, uint16_t>( labelStr, rsp ));    
+            declared_labels.insert( std::pair<string, uint16_t>( labelStr, rsp ));    
             readToken();
             return true;
         }    
-        else if( current.type == HALT )
+        else if( current.type == STOP )
         {
             j = 0;            // reset cursor
             rsp = 0;
@@ -497,10 +497,10 @@ namespace Asm
         {
             return true; // do nothing
         }
-        else if( current.type == HALT )
+        else if( current.type == STOP ) // End of file
         {
             program.push_back( 0xF0000000 ); // halt instruction
-            return false;                    // stop compiling (might not be usefull)
+            return false;                    // stop compilation
         }
         else if( current.type == LABEL_DECL ) // skip, already parsed by parseLabelDecl()
         {
@@ -527,6 +527,12 @@ namespace Asm
                 return parsePromptInstr();
             else if( op == "jump" or op == "call" or op == "ret" )
                 return parseJumpBasedInstr();
+            else if( op == "exit" )
+            {
+                readToken();
+                program.push_back( 0xF0000000 ); // halt instruction
+                return true;                     // continue compilation
+            }
             else{
                 return compileError("Unknown instruction '" + current.text + "'");
             }
@@ -759,7 +765,7 @@ namespace Asm
         {
             uint16_t v = parseValue();
             instruction |= v;
-            instruction |= 0x01000000;
+            instruction |= 0x01000000; // if value is immediate
         }
         else if( current.type == REG )
         {
@@ -821,9 +827,9 @@ namespace Asm
             readToken();
             if( current.type == LABEL )
             {
-                if( labels.count( current.text ) == 1 ) // the label exists
+                if( declared_labels.count( current.text ) == 1 ) // the label has been declared
                 {
-                    uint16_t address = labels[ current.text ]; // get the instruction address
+                    uint16_t address = declared_labels[ current.text ]; // get the instruction address
                     instruction |= address;
                     readToken();
 
@@ -857,12 +863,34 @@ namespace Asm
                     return true;
                 }    
                 else
-                    return compileError("Undeclared jump address");
+                    return compileError("Undeclared label");
             }
+            else return compileError("Expected a label after jump instruction");
         } // TODO call and ret
         else if( op == "call" )
         {
+            readToken();
+            if( current.type == LABEL ) // verify it has been declared
+            {
+                if( declared_labels.count( current.text ) == 1 ) // the label has been declared
+                {
+                    uint16_t address = declared_labels[ current.text ]; // get the instruction address
 
+                    instruction |= 0x90009000;  // push ip
+                    program.push_back( instruction );
+
+                    instruction = 0x32900000;        // copy immediate, reg
+                    instruction |= address;
+                    program.push_back( instruction ); // copy address, ip
+                    
+                    readToken();
+                    return true;
+                }
+                else
+                    return compileError("Undeclared label");
+            }
+            else 
+                return compileError("Expected a label after call instruction");
         }
         else if( op == "ret" )
         {

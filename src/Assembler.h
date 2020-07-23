@@ -30,7 +30,7 @@ namespace Asm   // keep things contained in a namespace.  basm = Basal Assembly
         BINARY_VALUE,
         LABEL_DECL,
         ENDL,
-        HALT,
+        STOP,
         TIME,
         AROBASE,
         DISP_TYPE,
@@ -70,7 +70,7 @@ namespace Asm   // keep things contained in a namespace.  basm = Basal Assembly
         uint64_t j{ 0 };                        // used to count tokens
         uint64_t lineNbr{ 1 };                  // one empty line is always artifially added at the begining
         std::vector<token> tokens;              // store all tokens
-        std::map<string, uint16_t> labels;      // store addresses of labels
+        std::map<string, uint16_t> declared_labels;      // store addresses of labels
         token current;                          // used as current token
 
     public:
