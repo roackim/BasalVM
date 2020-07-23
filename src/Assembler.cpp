@@ -219,6 +219,16 @@ namespace Asm
                 readToken();
                 return '\v' ;
             }
+            else if( c == "\\s" ) 
+            {
+                readToken();
+                return ' ' ;
+            }
+            else if( c == "\\," )
+            {
+                readToken();
+                return ',';
+            }
             else if( c == "\\!" ) // avoid comment
             {
                 readToken();
@@ -309,9 +319,11 @@ namespace Asm
             }
             else if( line[i] == ',' )
             {
-                if( txt[txt.length()-1] != del ) txt += del;
+                if( i > 0  and line[i-1] == '\\' ); // avoid this case
+                else if( txt[txt.length()-1] != del ) txt += del;
                 txt += ',';
-                if( not parser::isSpace( line[i+1] )) txt += del;    
+                if( i > 0  and line[i-1] == '\\' ); // avoid this case
+                else if( not parser::isSpace( line[i+1] )) txt += del;    
                 continue;
             }
             else if( line[i] == '@' )
@@ -348,7 +360,6 @@ namespace Asm
                 else if( i == 0 ) break;
             }
 
-                
             // default
             txt += line[i];
         }

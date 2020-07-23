@@ -7,6 +7,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+const bool DISP_TIME = true;
 
 int main( int argc, char *argv[] )
 {
@@ -31,7 +32,8 @@ int main( int argc, char *argv[] )
     // end chrono
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;
-    cout << "Assembled in " << elapsed.count() << " ms\n";
+    if( DISP_TIME ) 
+        cout << "Assembled in " << elapsed.count() << " ms\n";
 
     // terminate program if assemble returned false
     if( s == false )
@@ -63,7 +65,8 @@ int main( int argc, char *argv[] )
     // end chrono
     end = std::chrono::high_resolution_clock::now();
     elapsed = end - start;
-    cout << "Executed in " << elapsed.count() << " ms\n";
+    if( DISP_TIME )
+        cout << "Executed in " << elapsed.count() << " ms\n";
 
     // vm.dispMemoryStack();
 

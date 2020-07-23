@@ -388,21 +388,21 @@ void VM::executePROMPT( const uint32_t& instruction )
         switch( r_mode )
         {
             case 0: // char
-                cout << static_cast<char>( src_value ) << flush; 
+                cout << static_cast<char>( src_value ); 
                 break;
             case 1: // int
-                cout << static_cast<int16_t>( src_value ) << flush;
+                cout << static_cast<int16_t>( src_value );
                 break;
             case 2: // mem
-                cout << src_value << flush;
+                cout << src_value;
                 break;
             case 3: // hex
-                cout << std::hex << std::uppercase << src_value << std::dec << flush;
+                cout << std::hex << std::uppercase << src_value << std::dec;
                 break; 
             case 4: // bin
             {
                 std::bitset<16> binNbr( src_value );
-                cout << binNbr << flush;
+                cout << binNbr ;
                 break;
             }
             case 5: // str
@@ -418,7 +418,7 @@ void VM::executePROMPT( const uint32_t& instruction )
                     if( cursor < UINT16_MAX ) // avoid overflow
                         cursor += 1;
                 }
-                cout << mess << flush ;
+                cout << mess ;
                 break;
             }
             default:
