@@ -4,7 +4,7 @@
 #include "Assembler.h"
 #include "parser.h"
 
-
+ 
 namespace Asm
 {
 
@@ -658,7 +658,6 @@ namespace Asm
             instruction |= imm_value;                // add immediate value to the last 4 bits
             l_mode = 0;
         } 
-
         else
             return compileError("Unexpected token");
 
@@ -672,7 +671,7 @@ namespace Asm
             if( l_mode == 0 )
                 return compileError("Cannot use immediate value with an immediate address in the same instruction");
             if( l_mode == 1 )
-                return compileError("Cannot use two immediate addresses in the same instruction");
+                return compileError("Cannot use two immediate addresses in the same instruction");:// could be otherwise
 
             uint16_t dest_address = parseValue();    // expect a value after @ symbol
             instruction &= 0xFF0000FF;
@@ -695,6 +694,8 @@ namespace Asm
             instruction |= static_cast<uint32_t>( r_offset << 16 );
             r_mode = 3;
         }
+        else
+            return compileError("Expected an address or a register");
 
         // add the modes to the instruction
         short modes = (l_mode << 2) + r_mode;
