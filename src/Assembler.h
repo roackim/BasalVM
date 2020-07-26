@@ -150,6 +150,8 @@ namespace Asm   // keep things contained in a namespace.  basm = Basal Assembly
         // WAIT
         bool parseWaitInstr( void );
 
+        // opcode 0, CLS
+        bool parseCLSInstr( void );
 
 
 

@@ -26,7 +26,7 @@ namespace parser
 		return( op=="add"  or op=="sub" or op=="cmp"   or op=="copy" or op=="push" or op=="pop" or op=="mul" 
 			 or op=="div"  or op=="mod" or op=="and"   or op=="or"   or op=="not"  or op=="xor" or op=="jump" 
 			 or op=="call" or op=="ret" or op=="input" or op=="disp" or op=="rand" or op=="wait" or op=="exit"
-             or op=="halt"  );
+             or op=="halt" or op=="cls"  );
 	}
 
 	// return true if op is a flag from basm, case sensitive ( flags are uppercased eg : EQU, ZRO )

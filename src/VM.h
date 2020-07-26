@@ -34,7 +34,7 @@ private:
     // no program size limit, dinamic array for less memory impact on average
     std::vector<uint32_t> program;
     // amount of reserved space in memory ( maybe useful for later ? )
-    const uint16_t RESERVED_SPACE = 1;
+    const uint16_t RESERVED_SPACE = 0;
     // array containing the CPU flags, access like flags[ZRO]
     bool flags[ F_COUNT ];
     // used to generate random numbers
@@ -59,6 +59,10 @@ public:
 
     // display the stack values
     void dispMemoryStack( bool showReserved = false ) const;
+
+    // display the stack values without a box
+    void dispMemoryStackLight( void ) const;
+
 
     // display the content of Flags byte, with the corresponding flags eg ZRO, EQU, ODD etc..
     void dispFlagsRegister( void ) const;
@@ -127,6 +131,10 @@ private:
 
     // check if you can get back to the operand from the result, if not, result has overflowed
     void updateMulOverflow( const uint16_t& dest, const uint16_t& src );
+
+    // analyse second hex value to execute appropriate instruction 
+    void selectMISC( const uint32_t& instruction );
+
 };
 
 

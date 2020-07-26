@@ -234,7 +234,11 @@ namespace Asm
                 readToken();
                 return '#';
             }
-            else compileError("Unrecognized character");
+            else 
+            {
+                readToken();
+                return s[3];
+            }
         }
         return '?' ; // unkown character
     }
@@ -449,7 +453,7 @@ namespace Asm
         }
     }
 
-
+    // 
     bool Assembler::parseLabelDecl( void )
     {
         if( current.type == LABEL_DECL ) // if token is a label declaration, verifiy if not already defined, then define it.
@@ -461,6 +465,8 @@ namespace Asm
                 return compileError("Label '" + labelStr + "' already defined" );
 
             declared_labels.insert( std::pair<string, uint16_t>( labelStr, rsp ));    
+            // for debugging purposes:
+            // cout << labelStr << ": " << rsp << endl;
             readToken();
             return true;
         }    
@@ -511,6 +517,9 @@ namespace Asm
         {
             string op = parser::to_lower( current.text );
 
+            // cout << current.text << ": " << rsp << endl;
+            rsp++;
+
             if( op=="add" or op=="sub" or op=="cmp" or op=="copy" or op=="mul" or op=="div" or op=="mod" )
                 return parseAddBasedInstr();
             else if( op=="and" or op=="or" or op=="not" or op=="xor" )
@@ -527,6 +536,8 @@ namespace Asm
                 return parsePromptInstr();
             else if( op == "jump" or op == "call" or op == "ret" )
                 return parseJumpBasedInstr();
+            else if( op == "cls" )
+                return parseCLSInstr();
             else if( op == "exit" )
             {
                 readToken();
@@ -550,7 +561,6 @@ namespace Asm
         return false;
     }
 
-
     // helper function
     bool Assembler::readDereferencedReg( uint8_t& offset, uint8_t& reg )
     {
@@ -567,16 +577,14 @@ namespace Asm
 
             uint8_t v = std::abs( i ); 
             v &= 0b0111;
-            if( i < 0 ) v |= 0b1000; // first bit -> sign
-
-            // offset = static_cast<uint16_t>( v ); // why the cast ?
-            offset = v; // seems simpler
+            if( i < 0 ) v |= 0b1000;        // first bit -> sign
+            offset = v;                     // seems simpler
         }
         // read register inside parenthesis
         if( current.type == LPAREN )
         {
-            readToken();                // read the left parenthesis
-            if( current.type == REG )    // expect register name
+            readToken();                    // read the left parenthesis
+            if( current.type == REG )       // expect register name
             {
                 reg = getRegInd( current.text );
                 readToken();
@@ -671,7 +679,7 @@ namespace Asm
             if( l_mode == 0 )
                 return compileError("Cannot use immediate value with an immediate address in the same instruction");
             if( l_mode == 1 )
-                return compileError("Cannot use two immediate addresses in the same instruction");:// could be otherwise
+                return compileError("Cannot use two immediate addresses in the same instruction");// could be otherwise
 
             uint16_t dest_address = parseValue();    // expect a value after @ symbol
             instruction &= 0xFF0000FF;
@@ -705,7 +713,6 @@ namespace Asm
         return true;
     }
 
-    // TODO function body
     // opcode 8.  AND, OR, NOT, XOR        // only work with registers and immediate value
     bool Assembler::parseBinBasedInstr( void )
     {
@@ -816,8 +823,6 @@ namespace Asm
         return true;
     }
 
-
-    // TODO
     // opcode 11, JUMP, CALL, RET
     bool Assembler::parseJumpBasedInstr( void )
     {
@@ -831,6 +836,7 @@ namespace Asm
                 if( declared_labels.count( current.text ) == 1 ) // the label has been declared
                 {
                     uint16_t address = declared_labels[ current.text ]; // get the instruction address
+
                     instruction |= address;
                     readToken();
 
@@ -867,7 +873,7 @@ namespace Asm
                     return compileError("Undeclared label");
             }
             else return compileError("Expected a label after jump instruction");
-        } // TODO call and ret
+        }
         else if( op == "call" )
         {
             readToken();
@@ -877,12 +883,12 @@ namespace Asm
                 {
 
                     uint16_t address = declared_labels[ current.text ]; // get the instruction address
+                    instruction = 0xB0000000;
                     instruction |= address;
 
                     readToken();   
 
                     if( current.type == ENDL )// avoid being catched by else statement
-
                     {
                         instruction |= 0x01000000; // 1 means it is a call instruction    ;
                     }                     
@@ -919,10 +925,37 @@ namespace Asm
         else if( op == "ret" )
         {
             readToken();
-            instruction |= 0x02000000;  // ret  = pop ip
+            instruction = 0xB0000000;
+
+            if( current.type == ENDL )// avoid being catched by else statement
+            {
+                instruction |= 0x02000000; // 2 means it is a ret instruction    ;
+            }                     
+            else if( current.type == COND ) // either 'if' or 'ifnot'
+            {
+                instruction |= 0x05000000; // 5 means it is a conditionnal ret
+                if( current.text == "if" ) 
+                {
+                    instruction |= 0x00100000; // 1 by default ex: jump .. if EQU | 0: if negated ex: jump .. ifnot ZRO
+                }
+
+                readToken();
+                if( current.type == CPUFLAG )
+                {
+                    uint8_t flag_ind = getFlagInd( current.text );
+                    instruction |= static_cast<uint32_t>(flag_ind << 16 );
+                    readToken();
+                }
+                else
+                    return compileError("Expected CPU flag after 'if' or 'ifnot'");
+            }
+            else
+                return compileError("Unexpected token");
             program.push_back( instruction );
             return true;
         }
+        else
+            return compileError("Unexpected instruction");
         return false;
     }
 
@@ -1177,6 +1210,14 @@ namespace Asm
             return compileError("Expected time units, either 'ms' or 's' operand");
     }
 
+    // opcode 0, CLS
+    bool Assembler::parseCLSInstr( void )
+    {
+        readToken(); // read CLS token
+        uint32_t instruction = 0x01000000; // CLS selector
+        program.push_back( instruction );
+        return true;
+    }
 
 }
 

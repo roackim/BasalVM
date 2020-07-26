@@ -82,7 +82,7 @@ void VM::initialize( void )
     reg[sp] = RESERVED_SPACE; // save space for flags
     reg[ip] = 0;
 
-    program.clear();     // clear current program
+    program.clear();     // clear current program (currently not usefull)
 
     srand(time(NULL));
     rnd_seed = rand();   // seed the xorshift PRNG
@@ -99,7 +99,8 @@ void VM::start( void )
 {
     while( processInstruction( program[reg[ip]] ))
     { 
-        // cout << std::hex << std::uppercase <<  program[reg[ip]] <<  std::dec <<endl;
+        // dispMemoryStackLight();
+        // cout << std::hex << std::uppercase <<  program[reg[ip]] << std::dec << endl; 
     } 
 }
 
@@ -108,7 +109,7 @@ void VM::dispMemoryStack( bool showReserved ) const
 {
     cout << "\n┌────────────────────┐\n│ -- Memory Stack    │" << endl;
 
-    for( int32_t i = reg[sp]; i >= RESERVED_SPACE; i-- )
+    for( int32_t i = reg[sp]; i > RESERVED_SPACE; i-- )
     {
         int16_t value = static_cast<int16_t>(memory[i]);
         unsigned s = 11 - std::to_string( value ).length(); 
@@ -140,10 +141,33 @@ void VM::dispMemoryStack( bool showReserved ) const
     cout << "└────────────────────┘" << endl;
 }
 
+
+// display the stack values without a box
+void VM::dispMemoryStackLight( void ) const
+{
+    cout << "Memory Stack:" << endl;
+
+    for( int32_t i = reg[sp]; i > RESERVED_SPACE; i-- )
+    {
+        int16_t value = static_cast<int16_t>(memory[i]);
+        unsigned s = 11 - std::to_string( value ).length(); 
+
+        cout << i << "\t";
+
+        for( unsigned j=0; j<s; j++ ) // align numbers on the right
+        {
+            cout << " ";
+        }
+
+        cout << value << endl;
+    }
+}
+
+
 // check if the address is RESERVED
 void VM::checkForSegfault( const uint16_t& address ) const
 {
-    if( address < RESERVED_SPACE )
+    if( address < RESERVED_SPACE ) 
     {
         Error( "Segmentation fault, cannot access to reserved memory addresses");
     }
@@ -186,13 +210,13 @@ uint16_t VM::xorshift16( void )
 void VM::executeAddBasedOP( const uint32_t& instruction, OP op )
 {
     // 4 bits for sign and offset : 1bit of sign, 3bits of offset value, offset therefore range from -7 to 7
-    uint16_t  mode       = ( instruction & 0x0F000000 ) >> 24;   // mode of the instruction
-    uint16_t  dest       = ( instruction & 0x00F00000 ) >> 20;   // destination register
+    uint16_t mode       = ( instruction & 0x0F000000 ) >> 24;   // mode of the instruction
+    uint16_t dest       = ( instruction & 0x00F00000 ) >> 20;   // destination register
     bool     dest_sign  = ( instruction & 0x00080000 ) >> 19;   // destination offset sign
-    uint16_t  dest_off   = ( instruction & 0x00070000 ) >> 16;   // destination offset
-    uint16_t  src        = ( instruction & 0x000000F0 ) >>  4;   // source register
+    uint16_t dest_off   = ( instruction & 0x00070000 ) >> 16;   // destination offset
+    uint16_t src        = ( instruction & 0x000000F0 ) >>  4;   // source register
     bool     src_sign   = ( instruction & 0x00000008 ) >>  0;   // source offset sign
-    uint16_t  src_off    = ( instruction & 0x00000007 ) >>  0;   // source offset
+    uint16_t src_off    = ( instruction & 0x00000007 ) >>  0;   // source offset
     uint16_t src_value  = ( instruction & 0x0000FFFF );         // immediate value or address
     uint16_t dest_value = ( instruction & 0x00FFFF00 ) >>  8;   // immediate address
 
@@ -304,7 +328,7 @@ void VM::executePUSH( const uint32_t& instruction )
     uint16_t mode   = ( instruction & 0x0F000000 ) >> 24;   // mode of the instruction
     uint16_t src    = ( instruction & 0x0000F000 ) >> 12;   // source register
 
-    if( reg[sp] < UINT16_MAX ) // check for room in VM memory
+    if( reg[sp] < UINT16_MAX-1 ) // check for room in VM memory
     {
         if( mode == 0 ) // push source register
         {
@@ -323,7 +347,7 @@ void VM::executePUSH( const uint32_t& instruction )
 // take the top value, and decrement rsp, while placing ( or discarding ) the value in a register
 void VM::executePOP( const uint32_t& instruction ) 
 {
-    if( reg[sp] >= RESERVED_SPACE ) // check if there is something on the stack
+    if( reg[sp] > RESERVED_SPACE ) // check if there is something on the stack
     {
         uint16_t mode   = ( instruction & 0x0F000000 ) >> 24;   // mode of the instruction
         uint16_t dest   = ( instruction & 0x00F00000 ) >> 20;   // dest register
@@ -331,7 +355,7 @@ void VM::executePOP( const uint32_t& instruction )
         {
             reg[dest] = memory[reg[sp]]; // mov top of stack in destination register
         }
-        reg[sp] -= 1; // decrease rsp
+        reg[sp]--; // decrease rsp
     }
     else 
         Error("Stack is empty");
@@ -388,7 +412,10 @@ void VM::executePROMPT( const uint32_t& instruction )
         switch( r_mode )
         {
             case 0: // char
-                cout << static_cast<char>( src_value ); 
+                if( src_value == 219 ) // Extended ASCII, allow to draw "█" 
+                    cout << "█";
+                else
+                    cout << static_cast<char>( src_value ); 
                 break;
             case 1: // int
                 cout << static_cast<int16_t>( src_value );
@@ -609,50 +636,39 @@ void VM::executeJUMP( const uint32_t& instruction )
 
     if( mode == 0 ) // unconditionnal jump
     {
-       reg[ip] = value; 
+        reg[ip] = value;
     }
-    else if( mode == 1 ) // call
+    else if( mode == 1 ) // unconditionnal call
     {
-        executePUSH(0x90009000); // push ip
-        reg[ip] = value;         // ip already points to the next instruction
+        executePUSH( 0x90009000 );
+        reg[ip] = value;
     }
     else if( mode == 2 ) // ret
     {
-        executePOP(0xA0900000);
+        executePOP( 0xA0900000 );
     }
     else if( mode == 3 ) // conditionnal jump
     {
-        if( sign == false ) // ifnot
+        if( sign == flags[ cpuFlag ])
         {
-            if( not flags[ cpuFlag ] )
-                reg[ip] = value;
-        }
-        if( sign == true )
-        {
-            if( flags[ cpuFlag ] )
-                reg[ip] = value;
+            reg[ip] = value;
         }
     }
     else if( mode == 4 ) // conditionnal call
     {
-        if( sign == false ) // ifnot
+        if( sign == flags[ cpuFlag ])
         {
-            if( not flags[ cpuFlag ] )
-            {
-                executePUSH(0x90009000); // push ip
-                reg[ip] = value;         // ip already points to the next instruction
-            }
-        }
-        if( sign == true )
-        {
-            if( flags[ cpuFlag ] )
-            {
-                executePUSH(0x90009000); // push ip
-                reg[ip] = value;         // ip already points to the next instruction
-            }
+            executePUSH( 0x90009000 );
+            reg[ip] = value;
         }
     }
-
+    else if( mode == 5 ) // conditionnal ret
+    {
+        if( sign == flags[ cpuFlag ])
+        {
+            executePOP( 0xA0900000 );
+        }
+    }
 }
  
 
@@ -663,41 +679,38 @@ bool VM::processInstruction( const uint32_t& instruction )
     // get the current opcode
     OP op = getInstruction( instruction );
     
+    reg[ip]++; // increment ip
+
     switch( op )
     {
         case PUSH:
-            reg[ip]++; 
             executePUSH( instruction );
             break;
         case POP:
-            reg[ip]++;
             executePOP( instruction ); 
             break;
         case BIN:
-            reg[ip]++;
             executeBinBasedOP( instruction ); 
             break;
         case RAND:
-            reg[ip]++;
             executeRAND( instruction ); 
             break;
         case WAIT:
-            reg[ip]++;
             executeWAIT( instruction ); 
             break;
         case JUMP:
-            reg[ip]++;
             executeJUMP( instruction );
             break;
         case PROMPT:
-            reg[ip]++;
             executePROMPT( instruction ); 
             break;
         case HALT:
             return false; 
             break;
+        case MISC:
+            selectMISC( instruction );
+            break;
         default :
-            reg[ip]++;
             executeAddBasedOP( instruction, op ); 
             break;
     }
@@ -798,8 +811,21 @@ void VM::updateMulOverflow( const uint16_t& dest, const uint16_t& src )
     else flags[OVF] = 0;
 }
 
+// analyse second hex value to execute appropriate instruction 
+void VM::selectMISC( const uint32_t& instruction )
+{
+    uint16_t selector = instruction >> 24;
 
-
+    switch( selector )
+    {
+        case 1:
+            ClearConsole();
+            break;
+        default:
+            Error("Instruction Error");
+            break;
+    }
+}
 
 
 

@@ -15,3 +15,15 @@ short coef( bool value )
 {
 	return -(value*2 -1);
 }
+
+// allow to clear the console output depending on the OS
+void ClearConsole()
+{
+#if defined _WIN32
+    system("cls");
+#elif defined (__LINUX__) || defined(__gnu_linux__) || defined(__linux__)
+    system("clear");
+#elif defined (__APPLE__)
+    system("clear");
+#endif
+}

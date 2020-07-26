@@ -6,14 +6,14 @@
 //    -- Registers --
 enum Reg
 {
-    ax = 0,
-    bx,
-    cx,
-    dx,
-    ex,
-    fx,
-    si, 
-    di,
+    ax = 0, // 0.
+    bx,     // 1.
+    cx,     // 2.
+    dx,     // 3.
+    ex,     // 4.
+    fx,     // 5.
+    si,     // 6.
+    di,     // 7.
     sp,     // 8.
     ip,     // 9.
     R_COUNT
@@ -22,7 +22,7 @@ enum Reg
 //    -- OP codes --
 enum OP             
 {
-    IO = 0,     //  .0          // used to communicate with outside the VM, not implemented yet
+    MISC = 0,   //  .0          // Meta Opcode, containing severals instructions, defined by the second hex value    
     ADD,        //  .1          // Addition
     SUB,        //  .2          // Substraction
     COPY,       //  .3          // Copy
