@@ -1,0 +1,72 @@
+
+
+:START
+
+    # disp '\s', char
+
+    call RAND_CELLS
+    call DISP_CELLS
+
+    exit
+
+:STOP
+    disp    10, char
+    exit
+
+
+:RAND_CELLS                             # set every cells, either alive or dead
+    copy    -1, si
+
+:RC_LOOP
+    add     1, si
+    cmp     240, si
+    ret     if EQU                      # exit cond
+
+    rand    ax
+    mod     1000, ax
+    cmp     150, ax                     # alive threshold
+    jump    SET_CELL_ALIVE if NEG
+
+:SET_CELL_DEAD
+    copy    0, (si)                     # set the cell dead
+    jump    RC_END
+
+:SET_CELL_ALIVE
+    copy    1, (si)                     # set the cell alive
+
+:RC_END
+    jump RC_LOOP
+
+
+    
+:DISP_CELLS                             # set every cells, either alive or dead
+    copy    -1, si
+
+:DC_LOOP
+    add     1, si
+    cmp     240, si                     # grid size
+    ret     if EQU                      # exit cond
+
+    copy    si, fx
+    mod     40, fx                      # line length
+    call ENDL if EQU 
+
+    call DISP_CELL
+    jump DC_LOOP
+
+
+:DISP_CELL
+    cmp     1, (si)
+    jump    ALIVE if EQU
+    disp    '\s', char
+    ret
+:ALIVE
+    disp    '\#', char
+    ret
+
+
+:ENDL
+    disp 10, char
+    ret
+
+

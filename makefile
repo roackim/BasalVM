@@ -4,7 +4,7 @@ BIN_DIR ?= bin
 BUILD_DIR ?= objects
 SRC_DIRS ?= src
 
-CXX=g++
+CXX=g++ -g
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
