@@ -234,6 +234,16 @@ namespace Asm
                 readToken();
                 return '#';
             }
+            else if( c == "\\@" ) // avoid comment
+            {
+                readToken();
+                return '@';
+            }
+            else if( c == "\\|" ) // avoid comment
+            {
+                readToken();
+                return '|';
+            }
             else 
             {
                 readToken();
@@ -284,7 +294,7 @@ namespace Asm
         else if( txt == ":" ) type = COLON;
         else if( txt == "(" ) type = LPAREN;
         else if( txt == ")" ) type = RPAREN;
-        else if( txt == "s" or txt == "ms" ) type = TIME;        // try to match time units 
+        else if( txt == "s" or txt == "ms"  or txt == "us") type = TIME;        // try to match time units 
         else if( txt == "int" or txt == "char" or txt == "mem" or txt == "str" 
                 or txt == "hex" or txt == "bin" ) type = DISP_TYPE; // try to match time units 
         else if( parser::matchOP( txt ))            type = OP;                // try to match op
@@ -332,9 +342,11 @@ namespace Asm
             }
             else if( line[i] == '@' )
             {
-                if( txt[txt.length()-1] != del ) txt += del;
+                if( i > 0  and line[i-1] == '\\' ); // avoid this case
+                else if( txt[txt.length()-1] != del ) txt += del;
                 txt += '@';
-                if( not parser::isSpace( line[i+1] )) txt += del;    
+                if( i > 0  and line[i-1] == '\\' ); // avoid this case
+                else if( not parser::isSpace( line[i+1] )) txt += del;    
                 continue;
             }
             else if( line[i] == ';' )
@@ -1198,10 +1210,12 @@ namespace Asm
         bool comma = readComma();
         if( current.type == TIME )
         {
-            if( current.text == "ms" ) ;
+            if( current.text == "s" ) ;
                 // nothing to change in instruction ( mode == 0 )
-            else if( current.text == "s" )
+            else if( current.text == "ms" )
                 instruction |= 0x01000000;
+            else if( current.text == "us" )
+                instruction |= 0x02000000;
             readToken(); // skip unit token
             program.push_back( instruction );
             return true and comma;

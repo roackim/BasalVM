@@ -618,9 +618,11 @@ void VM::executeWAIT( const uint32_t& instruction )
     using namespace std::chrono_literals;
     // auto start = std::chrono::high_resolution_clock::now();
     if( mode == 0 )
-        std::this_thread::sleep_for(std::chrono::milliseconds( value ));
-    if( mode == 1 )
         std::this_thread::sleep_for(std::chrono::seconds( value ));
+    if( mode == 1 )
+        std::this_thread::sleep_for(std::chrono::milliseconds( value ));
+    if( mode == 2 )
+        std::this_thread::sleep_for(std::chrono::microseconds( value ));
     // auto end = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double, std::milli> elapsed = end-start;
     // cout << "Waited " << elapsed.count() << " ms\n";
@@ -819,6 +821,7 @@ void VM::selectMISC( const uint32_t& instruction )
     switch( selector )
     {
         case 1:
+            cout << std::flush;
             ClearConsole();
             break;
         default:
