@@ -1,0 +1,57 @@
+
+
+:BEGIN
+
+    call    DispName
+
+
+    copy    123, 123    
+
+    copy    0,  ax
+    copy    1,  bx
+    copy    15, cx  
+
+    disp    '{', char
+    disp     bx, mem
+
+:LOOP   # loop to calculate fibonacci sequence
+    sub     1,  cx
+    cmp     0,  cx
+    jump END if EQU 
+
+    copy    bx, dx
+    add     ax, bx
+    copy    dx, ax
+
+    call Inter
+    disp    bx, mem
+
+    jump LOOP
+
+
+
+:END    # end program
+    disp    '}',    char
+    disp    '\n',   char
+    exit
+
+
+:Inter  # separate numbers in display
+    disp    '\,',   char
+    disp    '\s',   char
+    ret
+
+:DispName
+
+    disp    'F',    char
+    disp    'i',    char
+    disp    'b',    char
+    disp    'o',    char
+    disp    'n',    char
+    disp    'a',    char
+    disp    'c',    char
+    disp    'c',    char
+    disp    'i',    char
+    disp    ':',    char
+    disp    '\n',   char
+    ret
