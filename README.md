@@ -2,20 +2,19 @@
 basic 16bits VM, written in C++ capable of interpreting basal bytecode, using 32bits instructions.
 the VM automatically allocate 2^16 words of 16bits. this represent ~130ko of memory.
 the program is loaded by the compiler in a std::vector, containing instructions encoded in 32 bits.
-Its size is proportionnal to the number of instruction in the program.
 
 # Basal Assembler
 proto Assembler based on GNU assembly, but simplified.
-can "compile" 20k basal assembly lines to bytecode under 0.1s
+can assemble 20k basal assembly lines to instruction code under 0.1s
 
-it has severals features such as dereferencing registers, using immediate values or addresses.
+it has severals features such as dereferencing registers, using immediate values or direct addresses.
 
 # BASM Syntax
 
 The syntax is based on GAS, generally follow this model : <Instr> <source>, <desination>
 Instructions are not case-sensitive, although registers, and CPU flags are.
 
-~~ TODO define explicitly every syntax and functionnality
+~~ TODO in depth documentation for every instruction
 
 
 Registers:
@@ -39,8 +38,6 @@ Instructions:
 
 CPU flags:
 
-	mainly used after a cmp instruction, 
-
 	EQU, ZRO, POS, NEG, OVF, ODD
 
 
@@ -48,23 +45,36 @@ Examples :
 
 	! this BASM programm displays the first 10 iteration of the fibonacci sequence
 
-	:Fibonacci_Seq
 
-		copy 10, cx
-		copy  0, ax
-		copy  1, bx
-		
-		disp ax, int
+:BEGIN
 
-	:loopStart				
-		disp bx, int
-	
-		copy bx, dx
-		add  bx, ax
-		copy ax, bx		! bx -> ax + bx
-		copy dx, ax		! ax -> bx
+    copy    0,  ax
+    copy    1,  bx
+    copy    15, cx  
 
-		sub   1, cx
-		jmp loopStart if ZRO
+    disp    '{', char
+    disp     bx, mem
 
-	ret
+:LOOP   # loop to calculate fibonacci sequence
+    sub     1,  cx
+    cmp     0,  cx
+    jump END if EQU 
+
+    copy    bx, dx
+    add     ax, bx
+    copy    dx, ax
+
+    call Inter
+    disp    bx, mem
+
+    jump LOOP
+
+:END    # end program
+    disp    '}',    char
+    disp    '\n',   char
+    exit
+    
+:Inter  # separate numbers in display
+    disp    '\,',   char
+    disp    '\s',   char
+    ret
