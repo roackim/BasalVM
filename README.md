@@ -10,7 +10,7 @@ the program is loaded by the compiler in a std::vector, containing instructions 
 	
 you can also just remove the # Static Analysis in the makefile instead if you dont want to use cppclean and cppcheck.
 
-	The project is compiled with a very large set of warnings enabled, which you can see typing "make flags", it also should compile without any warning being prompt, except a few from Static Analysis.
+The project is compiled with a very large set of warnings enabled, which you can see typing "make flags", it also should compile without any warning being prompt, except a few from Static Analysis.
 
 # Usage
 
