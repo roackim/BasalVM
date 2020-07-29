@@ -63,8 +63,9 @@ CPU flags:
 
 Examples :
 
-	! this BASM programm displays the first 10 iteration of the fibonacci sequence
-
+	#--------------------
+	# Fibonacci Sequence
+	#--------------------
 
 	:BEGIN
 
