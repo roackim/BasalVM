@@ -34,31 +34,7 @@ it has severals features such as dereferencing registers, using immediate values
 The syntax is based on GAS, generally follow this model : <Instr> <source>, <desination>
 Instructions are not case-sensitive, although registers, and CPU flags are.
 
-~~ TODO in depth documentation for every instruction
-
-
-Registers:
-
-	ax   |
-	bx	 |
-	cx	 |> General purpose registers
-	dx	 |
-	ex	 |
-	fx	 |
-	si	 -> Source Index register  
-	di	 -> Destination Index register
-	sp	 -> Stack Pointer register
-	ip	 -> Instruction Pointer register
-
-Instructions:
-	
-	add, sub, copy, cmp, mul, div, mod, bin, push, pop, jump, prompt, rand, wait		
-
-	~~ Todo: detail every instructions
-
-CPU flags:
-
-	EQU, ZRO, POS, NEG, OVF, ODD
+~~ Check Doc.md for more information about the syntax
 
 
 Examples :
