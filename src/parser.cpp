@@ -4,6 +4,8 @@
 
 using std::string;
 
+
+
 namespace parser
 {
 	// return lower cased string
@@ -28,6 +30,7 @@ namespace parser
 			 or op=="call" or op=="ret" or op=="input" or op=="disp" or op=="rand" or op=="wait" or op=="exit"
              or op=="halt" or op=="cls"  );
 	}
+
 
 	// return true if op is a flag from basm, case sensitive ( flags are uppercased eg : EQU, ZRO )
 	bool matchFlag( const string& op )
@@ -163,4 +166,79 @@ namespace parser
 		}
 		return true;
 	}
+
+    // split a string with a delimiter 
+    string removeSpace( string line )
+    {
+        char del = '|';
+        string delstr ; delstr += del; // used to compare txt to del 
+        string txt = "";
+        for( uint64_t i=0; i < line.length(); i++)
+        {
+            if( txt == delstr ) // avoid having a delimiter in first place
+                txt = "";
+            if( parser::isSpace( line[i]) )
+            {    
+                txt += del;
+                while( parser::isSpace( line[i+1]) ) 
+                {
+                    i++;    
+                }
+                continue;
+            }
+            else if( line[i] == ',' )
+            {
+                if( i > 0  and line[i-1] == '\\' ); // avoid this case
+                else if( txt[txt.length()-1] != del ) txt += del;
+                txt += ',';
+                if( i > 0  and line[i-1] == '\\' ); // avoid this case
+                else if( not parser::isSpace( line[i+1] )) txt += del;    
+                continue;
+            }
+            else if( line[i] == '@' )
+            {
+                if( i > 0  and line[i-1] == '\\' ); // avoid this case
+                else if( txt[txt.length()-1] != del ) txt += del;
+                txt += '@';
+                if( i > 0  and line[i-1] == '\\' ); // avoid this case
+                else if( not parser::isSpace( line[i+1] )) txt += del;    
+                continue;
+            }
+            else if( line[i] == ';' )
+            {
+                if( txt[txt.length()-1] != del ) txt += del;
+                txt += ';';
+                if( not parser::isSpace( line[i+1] )) txt += del;    
+                continue;
+            }
+            else if( line[i] == '(' )
+            {
+                if( txt[txt.length()-1] != del ) txt += del;
+                txt += '(';
+                if( not parser::isSpace( line[i+1] )) txt += del;    
+                continue;
+            }
+            else if( line[i] == ')' )
+            {
+                if( txt[txt.length()-1] != del ) txt += del;
+                txt += ')';
+                if( not parser::isSpace( line[i+1] )) txt += del;    
+                continue;
+            }
+            else if( line[i] == '#')
+            {
+                if( i != 0 and line[i-1] != '\\' ) break;
+                else if( i == 0 ) break;
+            }
+
+            // default
+            txt += line[i];
+        }
+        if( txt[txt.length()-1] != del and txt != "" ) txt += del;
+        txt += ";"; // end of line token
+        txt += del;
+        
+        return txt;
+    }
+
 }

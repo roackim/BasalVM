@@ -562,6 +562,7 @@ void VM::executeRAND( const uint32_t& instruction )
         reg[dest] = xorshift16() % max_value;
     else if( mode == 2 )  // 0 <= x < max_value     
         reg[dest] = (xorshift16() % max_value / 2 ) + ( max_value / 2 );
+    updateFlags( reg[dest] );
 }
 
 // TODO REFACTOR akin to AddBasedInstr

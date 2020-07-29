@@ -26,8 +26,8 @@ int main( int argc, char *argv[] )
     auto start = std::chrono::high_resolution_clock::now();
 
     // Instanciate Assambler, assemble instructions
-    Asm::Assembler basm;
-    bool s = basm.assemble( file );
+    basm::Assembler assembler;
+    bool s = assembler.assemble( file );
 
     // end chrono
     auto end = std::chrono::high_resolution_clock::now();
@@ -45,9 +45,9 @@ int main( int argc, char *argv[] )
     // For Debugging purposes
 
     // cout << "\nAssembled :" << endl;
-    // for( unsigned i=0; i<basm.program.size(); i++)
+    // for( unsigned i=0; i<assembler.program.size(); i++)
     // {
-    //     cout << i<< "\t" << std::hex << std::uppercase << basm.program[i] << std::dec << endl;
+    //     cout << i<< "\t" << std::hex << std::uppercase << assembler.program[i] << std::dec << endl;
     // }
     // cout << endl;
     
@@ -57,7 +57,7 @@ int main( int argc, char *argv[] )
     // Instanciate Virtual Machine
     VM vm;
     vm.initialize();
-    vm.load( basm.program );
+    vm.load( assembler.program );
     vm.start();
 
     // vm.dispFlagsRegister();

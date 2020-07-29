@@ -31,4 +31,6 @@ namespace parser
 	bool matchLabelDecl( const string& s );
 	bool matchLabel( const string& s );
 
+    // split a string with a delimiter 
+    string removeSpace( string line );
 }

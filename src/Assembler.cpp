@@ -5,7 +5,7 @@
 #include "parser.h"
 
  
-namespace Asm
+namespace basm
 {
 
     // better error message for compilation
@@ -42,93 +42,6 @@ namespace Asm
 
         exit(-1); // subject to change
         return false;
-    }
-
-    // helper function, allow to get string from enum
-    string getTypeStr( Type type )
-    {
-        switch( type )
-        {
-            case 0:
-                return "label";
-            case 1:
-                return "op";
-            case 2:
-                return "reg";
-            case 3:
-                return "flag";
-            case 4:
-                return "flow";
-            case 5:
-                return "comma";
-            case 6:
-                return "colon";
-            case 7:
-                return "lparen";
-            case 8:
-                return "rparen";
-            case 9:
-                return "comment";
-            case 10:
-                return "decimal_value";
-            case 11:
-                return "hexa_value";
-            case 12:
-                return "binary_value";
-            case 13:
-                return "label_decl";
-            case 14:
-                return "endl";
-            case 15:
-                return "stop";
-            case 16:
-                return "time";
-            case 17:
-                return "arobase";
-            case 18:
-                return "disp_type";
-            case 19:
-                return "char_value";
-            case 20:
-                return "unkown";
-            default:
-                return "unkown";
-        }
-        return "ERROR";
-    }
-
-    // get register index
-    uint8_t getRegInd( const string& reg )
-    {
-        if     ( reg == "ax" ) return 0;    
-        else if( reg == "bx" ) return 1;
-        else if( reg == "cx" ) return 2;
-        else if( reg == "dx" ) return 3;
-        else if( reg == "ex" ) return 4;
-        else if( reg == "fx" ) return 5;
-        else if( reg == "si" ) return 6;
-        else if( reg == "di" ) return 7;
-        else if( reg == "sp" ) return 8;
-        else if( reg == "ip" ) return 9;
-
-        // not supposed to happen.
-        std::cerr << "unkown register : " << reg << endl;
-        return 15;
-    }
-
-    // get CPU flag index from string
-    uint8_t getFlagInd( const string& flag )
-    {
-        if     ( flag == "EQU" ) return 0;    
-        else if( flag == "ZRO" ) return 1;
-        else if( flag == "POS" ) return 2;
-        else if( flag == "NEG" ) return 3;
-        else if( flag == "OVF" ) return 4;
-        else if( flag == "ODD" ) return 5;
-
-        // not supposed to happen
-        std::cerr << "unkown flag : " << flag << endl;
-        return 6;
     }
 
     // increment j and reassign token t
@@ -312,79 +225,6 @@ namespace Asm
         return( ret ); 
     }
 
-    // split a string with a delimiter 
-    string Assembler::removeSpace( string line )
-    {
-        char del = '|';
-        string delstr ; delstr += del; // used to compare txt to del 
-        string txt = "";
-        for( uint64_t i=0; i < line.length(); i++)
-        {
-            if( txt == delstr ) // avoid having a delimiter in first place
-                txt = "";
-            if( parser::isSpace( line[i]) )
-            {    
-                txt += del;
-                while( parser::isSpace( line[i+1]) ) 
-                {
-                    i++;    
-                }
-                continue;
-            }
-            else if( line[i] == ',' )
-            {
-                if( i > 0  and line[i-1] == '\\' ); // avoid this case
-                else if( txt[txt.length()-1] != del ) txt += del;
-                txt += ',';
-                if( i > 0  and line[i-1] == '\\' ); // avoid this case
-                else if( not parser::isSpace( line[i+1] )) txt += del;    
-                continue;
-            }
-            else if( line[i] == '@' )
-            {
-                if( i > 0  and line[i-1] == '\\' ); // avoid this case
-                else if( txt[txt.length()-1] != del ) txt += del;
-                txt += '@';
-                if( i > 0  and line[i-1] == '\\' ); // avoid this case
-                else if( not parser::isSpace( line[i+1] )) txt += del;    
-                continue;
-            }
-            else if( line[i] == ';' )
-            {
-                if( txt[txt.length()-1] != del ) txt += del;
-                txt += ';';
-                if( not parser::isSpace( line[i+1] )) txt += del;    
-                continue;
-            }
-            else if( line[i] == '(' )
-            {
-                if( txt[txt.length()-1] != del ) txt += del;
-                txt += '(';
-                if( not parser::isSpace( line[i+1] )) txt += del;    
-                continue;
-            }
-            else if( line[i] == ')' )
-            {
-                if( txt[txt.length()-1] != del ) txt += del;
-                txt += ')';
-                if( not parser::isSpace( line[i+1] )) txt += del;    
-                continue;
-            }
-            else if( line[i] == '#')
-            {
-                if( i != 0 and line[i-1] != '\\' ) break;
-                else if( i == 0 ) break;
-            }
-
-            // default
-            txt += line[i];
-        }
-        if( txt[txt.length()-1] != del and txt != "" ) txt += del;
-        txt += ";"; // end of line token
-        txt += del;
-        
-        return txt;
-    }
 
     // get one token from a string already split // called by loadAndTokenize
     bool Assembler::getOneToken( string& line )  
@@ -419,7 +259,7 @@ namespace Asm
 
             while(rfile.getline( line, 120 ))    // tokenize whole line for every lines
             {
-                string s = removeSpace( line );
+                string s = parser::removeSpace( line );
                 while( getOneToken( s ) ){ }
             }
         }
@@ -725,7 +565,7 @@ namespace Asm
         return true;
     }
 
-    // opcode 8.  AND, OR, NOT, XOR        // only work with registers and immediate value
+    // opcode 8.  AND, OR, NOT, XOR        // only work with registers and immediate value, no place left for dereferencement
     bool Assembler::parseBinBasedInstr( void )
     {
         uint32_t instruction = 0x80000000;
@@ -835,6 +675,7 @@ namespace Asm
         return true;
     }
 
+    // TODO split into 3 functions
     // opcode 11, JUMP, CALL, RET
     bool Assembler::parseJumpBasedInstr( void )
     {
@@ -970,8 +811,6 @@ namespace Asm
             return compileError("Unexpected instruction");
         return false;
     }
-
-
 
     // Called by parsePromptInstr 
     bool Assembler::parseDispInstr( void )

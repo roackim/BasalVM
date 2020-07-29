@@ -34,6 +34,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	@$(MKDIR_P) $(dir $@)
 	@$(CXX) $(CMP_FLAGS) -c $< -o $@
 	@echo $(CXX) -Wall -Wextra ... -c $< -o $@
+	# Static Analysis
 	@cppclean $<
 	@cppcheck $<
 
@@ -43,6 +44,7 @@ flags:
 
 .PHONY: clean
 
+# Static Analysis every file of the project
 analyse: # analyse every source files, with maximum warnings on cppcheck
 	@cppclean $(SRC_DIRS)
 	@cppcheck --enable=all --inconclusive --library=posix $(SRC_DIRS)

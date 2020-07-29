@@ -1,4 +1,6 @@
 #pragma once
+#include "assemblerDef.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -11,54 +13,8 @@ using std::endl;
 
 
         
-namespace Asm   // keep things contained in a namespace.  basm = Basal Assembly
+namespace basm   // keep things contained in a namespace.  basm = Basal Assembly
 {
-    enum Type   // types of tokens
-    {
-        LABEL,
-        OP,
-        REG,
-        CPUFLAG,
-        COND,
-        COMMA,
-        COLON,
-        LPAREN,
-        RPAREN,
-        COMMENT,
-        DECIMAL_VALUE,
-        HEXA_VALUE,
-        BINARY_VALUE,
-        LABEL_DECL,
-        ENDL,
-        STOP,
-        TIME,
-        AROBASE,
-        DISP_TYPE,
-        CHAR_VALUE,
-        UNKNOWN
-    };
-
-    class token
-    {
-    public:
-        string text;
-        Type type = UNKNOWN;
-        token( const string& s, Type t )
-        : text( s )
-        , type( t ) { }
-        token()
-        {
-        }
-    };
-
-    // helper function, allow to get string from enum
-    string getTypeStr( Type type );
-
-    // get register index from string
-    uint8_t getRegInd( const string& reg ); 
-
-    // get CPU flag index from string
-    uint8_t getFlagInd( const string& flag ); 
 
     class Assembler
     {
@@ -104,9 +60,6 @@ namespace Asm   // keep things contained in a namespace.  basm = Basal Assembly
 
         // match regex with string to find corresponding Type, and pakc both type and Txt in a token object.
         token tokenize( string txt );
-
-        // split a string with a delimiter 
-        string removeSpace( string line );
 
         // get one token from a string already split 
         bool getOneToken( string& line );

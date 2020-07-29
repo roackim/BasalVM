@@ -4,9 +4,6 @@
 
     call    DispName
 
-
-    copy    123, 123    
-
     copy    0,  ax
     copy    1,  bx
     copy    15, cx  
