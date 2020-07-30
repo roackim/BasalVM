@@ -39,8 +39,11 @@ Instructions are not case-sensitive, although registers, and CPU flags are.
 
 Examples :
 
+Game of life running on basal VM (code ~300 instructions)
 
 ![Game of life running on basal VM](preview.gif?raw=true "Game of life running on basal VM")
+
+Code Displaying the first element of the Fibonacci sequence
 
 	#--------------------
 	# Fibonacci Sequence
