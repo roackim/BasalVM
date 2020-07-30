@@ -33,7 +33,7 @@ Check Doc.md for more details.
 
 Game of life running on basal VM (bin/examples/GameOfLife.basm) :
 
-![Game of life running on basal VM](preview.gif?raw=true "Game of life running on basal VM")
+![Game of life running on basal VM](preview.gif?raw=true "Basal VM interpreting bin/examples/GameOfLife.basm")
 
 Display the first elements of the Fibonacci sequence (bin/examples/fibonacci.basm) :
 
