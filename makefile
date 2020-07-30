@@ -44,6 +44,9 @@ flags:
 
 .PHONY: clean
 
+windows:
+	x86_64-w64-mingw32-g++ -o $(TARGET_EXEC).exe  $(SRCS) --static
+
 # Static Analysis every file of the project
 analyse: # analyse every source files, with maximum warnings on cppcheck
 	@cppclean $(SRC_DIRS)
@@ -51,6 +54,9 @@ analyse: # analyse every source files, with maximum warnings on cppcheck
 
 clean:
 	$(RM) -r $(BUILD_DIR)
+
+
+
 
 -include $(DEPS)
 
