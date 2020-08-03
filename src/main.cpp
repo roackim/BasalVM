@@ -4,6 +4,7 @@
 #include "Assembler.h"
 
 using std::cout; 
+using std::cin ;
 using std::cerr;
 using std::endl;
 
@@ -21,6 +22,10 @@ int main( int argc, char *argv[] )
     }
 
     string file = argv[1];
+
+    // string file = "";
+    // cout << "load: ";
+    // cin >> file;
 
     // start chrono 
     auto start = std::chrono::high_resolution_clock::now();
