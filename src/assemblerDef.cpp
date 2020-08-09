@@ -24,6 +24,13 @@ namespace basm
         else if( reg == "di" ) return 7;
         else if( reg == "sp" ) return 8;
         else if( reg == "ip" ) return 9;
+        else if( reg == "r0" ) return 10;
+        else if( reg == "r1" ) return 11;
+        else if( reg == "r2" ) return 12;
+        else if( reg == "r3" ) return 13;
+        else if( reg == "r4" ) return 14;
+        else if( reg == "r5" ) return 15;
+        
 
         // not supposed to happen.
         std::cerr << "unkown register : " << reg << endl;

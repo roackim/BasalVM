@@ -52,7 +52,10 @@ namespace parser
 	bool matchReg( const string& op )
 	{
 		// string oplist = "ax|bx|cx|dx|ex|fx|di|si|ip|sp";
-		return( op=="ax" or op=="bx" or op=="cx" or op=="dx" or op=="ex" or op=="fx" or op=="di" or op=="si" or op=="ip" or op=="sp" );
+		return( op=="ax" or op=="bx" or op=="cx" or op=="dx" or op=="ex" 
+                         or op=="fx" or op=="di" or op=="si" or op=="ip" 
+                         or op=="sp" or op=="r0" or op=="r1" or op=="r2"
+                         or op=="r3" or op=="r4" or op=="r5" );
 	}
 
 

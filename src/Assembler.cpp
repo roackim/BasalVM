@@ -163,7 +163,7 @@ namespace basm
                 return s[3];
             }
         }
-        return '?' ; // unkown character
+        return '?' ; // unknown character
     }
 
     // curent token must be a ENDL, compileError and return false otherwise

@@ -34,7 +34,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	@$(MKDIR_P) $(dir $@)
 	@$(CXX) $(CMP_FLAGS) -c $< -o $@
 	@echo $(CXX) -Wall -Wextra ... -c $< -o $@
-	# Static Analysis
+	@# Static Analysis
 	@cppclean $<
 	@cppcheck $<
 
