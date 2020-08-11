@@ -4,8 +4,8 @@
 
 :START  # init values    
 
-    copy  150, ex        # Width
-    copy  40, fx        # Height
+    copy  80, ex        # Width
+    copy  20, fx        # Height
     
     mul   ex, fx        # Number of cells
     copy  fx, sp        # Reserve memory
