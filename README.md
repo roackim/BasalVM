@@ -1,14 +1,14 @@
 # Basal Virtual Machine
-basic 16bits VM, written in C++ capable of interpreting basal bytecode, using 32bits instructions.
-the VM automatically allocate 2^16 words of 16bits. this represent ~130ko of memory.
-the program is loaded by the compiler in a std::vector, containing instructions encoded in 32 bits.
+A basic 16bits VM, written in C++ capable of interpreting basal bytecode, using 32bits instructions.
+The VM automatically allocate 2^16 words of 16bits. this represent ~130ko of memory.
+It is quite performant, being able to execute ~20k instructions in 0.5 ms.
 
 # Dependencies
 	- gcc
-	- cppclean
+    - make
+	- cppclean  ( removable from makefile, like cppcheck )
 	- cppcheck
 	
-you can also just remove the # Static Analysis in the makefile instead if you dont want to use cppclean and cppcheck.
 The project is compiled with a very large set of warnings enabled, which you can see typing "make flags".
 It should compile without any warning being prompt, except a few from Static Analysis.
 
@@ -23,11 +23,12 @@ Currently the assembler and the VM are coupled together, meaning you can only us
 
 
 # Basal Assembler
-proto Assembler based on GNU assembly, but simplified.
-can assemble 20k basal assembly lines to instruction code under 0.1s
+proto-assembler based on GNU assembly, but simplified.
+can assemble 20k basal assembly lines to instruction code under 0.1s.
 
 It has severals features such as dereferencing registers, using immediate values or direct addresses.
-Check Doc.md for more details.
+Check Doc.md for more details. You can also check the code sample in bin/example, you'll find an implementation
+of Conway's Game Of Life as well as other programs.
 
 #Examples :
 
