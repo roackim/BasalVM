@@ -8,7 +8,7 @@ using std::cin ;
 using std::cerr;
 using std::endl;
 
-const bool DISP_TIME = false;
+const bool DISP_TIME = true;
 
 int main( int argc, char *argv[] )
 {
@@ -72,7 +72,7 @@ int main( int argc, char *argv[] )
     end = std::chrono::high_resolution_clock::now();
     elapsed = end - start;
     if( DISP_TIME )
-        cout << "Executed in " << elapsed.count() << " ms\n";
+        cout << "\nExecuted in " << elapsed.count() << " ms\n";
 
     // vm.dispMemoryStack();
 

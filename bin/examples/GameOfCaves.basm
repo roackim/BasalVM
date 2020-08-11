@@ -4,8 +4,8 @@
 
 :START  # init values    
 
-    copy  80, ex        # Width
-    copy  20, fx        # Height
+    copy  150, ex        # Width
+    copy  40, fx        # Height
     
     mul   ex, fx        # Number of cells
     copy  fx, sp        # Reserve memory
@@ -29,7 +29,7 @@
 
 :INNER_LOOP_MAIN
     add 1, cx
-    cmp 2000, cx
+    cmp 6, cx
     ret if EQU
 
     call APPLY_CELLS_NEXT_STATE
@@ -43,9 +43,34 @@
 
     
     # disp 10, char
-    wait 100, ms
+    wait 230, ms
 
     jump INNER_LOOP_MAIN
+
+
+#-------------------------------------------------
+# Randomize the current state of the current cell
+#-------------------------------------------------
+
+:RAND_ONE_CELL
+    copy (si), dx
+    rand    ax
+    mod     1000, ax                    # Visualize % of alive cells |> 15/100 cells will be alive 
+    cmp     380, ax                     # Alive threshold            |
+    call    SET_CELL_ALIVE if NEG
+    ret
+
+#-------------------------------
+# Set Cell either dead or alive
+#-------------------------------
+
+:SET_CELL_DEAD
+    copy    0, (si)
+    ret
+
+:SET_CELL_ALIVE
+    copy    1, (si)
+    ret
 
 #-----------------------------------------------------------------
 # Set the next state of every cells according to their neighbours
@@ -70,18 +95,14 @@
     call COUNT_NEIGHBOURS       # Count number of Alive neighbours put result in ax
     copy (si), dx 
     and  0x0001, dx
-    cmp     0, dx
-    jump CELL_IS_ALIVE if ODD
 :CELL_IS_DEAD
-    cmp     3, ax
-    jump SNS_END ifnot EQU
+    cmp     4, ax
+    jump SNS_END if NEG
     add     2, dx               # Set next state to alive
     jump SNS_END
 :CELL_IS_ALIVE
-    cmp     2, ax
+    cmp     4, ax
     jump SNS_END if NEG
-    cmp     3, ax
-    jump SNS_END if POS
     add     2, dx               # Set next state to alive
 
 :SNS_END
@@ -226,28 +247,7 @@
 
     jump INNER_LOOP_RAND
 
-#-------------------------------------------------
-# Randomize the current state of the current cell
-#-------------------------------------------------
 
-:RAND_ONE_CELL
-    copy (si), dx
-    rand    ax
-    mod     1000, ax                    # Visualize % of alive cells |> 15/100 cells will be alive 
-    cmp     105, ax                     # Alive threshold            |
-    jump    SET_CELL_ALIVE if NEG
-
-#-------------------------------
-# Set Cell either dead or alive
-#-------------------------------
-
-:SET_CELL_DEAD
-    copy    0, (si)
-    ret
-
-:SET_CELL_ALIVE
-    copy    1, (si)
-    ret
 
 #-------------------------------
 # Set Cell dead if on a border 
@@ -314,14 +314,14 @@
     disp    '\s', char          # Display empty space if dead
     ret
 :ALIVE
-    disp    '0', char          # Char to display if alive
+    disp    '\#', char          # Char to display if alive
     ret
 :ALIVE_SOON
-    disp    '+', char          # Char to display if alive
+    disp    '\s', char          # Char to display if alive
     # disp    '+', char
     ret
 :DEAD_SOON
-    disp    'O', char          # Char to display if alive
+    disp    '\#', char          # Char to display if alive
     # disp    '-', char
     ret
 

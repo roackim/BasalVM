@@ -186,6 +186,8 @@ namespace lexer
         vector<string> words;
         string word = "";
 
+        bool notEsc = true;
+
        
         for( uint32_t i=0; i < line.length(); i++) // every char of the string
         {
@@ -200,7 +202,6 @@ namespace lexer
             }
             else if( line[i] == ',' )
             {
-                bool notEsc = not isEscaped( line, i );
                 if( notEsc ) 
                     endWord( words, word );
                 word += line[i];
@@ -208,7 +209,6 @@ namespace lexer
             }
             else if( line[i] == '@' )
             {
-                bool notEsc = not isEscaped( line, i );
                 if( notEsc ) 
                     endWord( words, word );
                 word += line[i];
@@ -218,7 +218,6 @@ namespace lexer
             }
             else if( line[i] == ';' )
             {
-                bool notEsc = not isEscaped( line, i );
                 if( notEsc ) 
                     endWord( words, word );
                 word += line[i];
@@ -228,7 +227,6 @@ namespace lexer
             }
             else if( line[i] == '(' )
             {
-                bool notEsc = not isEscaped( line, i );
                 if( notEsc ) 
                     endWord( words, word );
                 word += line[i];
@@ -238,7 +236,6 @@ namespace lexer
             }
             else if( line[i] == ')' )
             {
-                bool notEsc = not isEscaped( line, i );
                 if( notEsc ) 
                     endWord( words, word );
                 word += line[i];
@@ -248,7 +245,6 @@ namespace lexer
             }
             else if( line[i] == '#') // discard the rest of the line if the char is not escaped
             {
-                bool notEsc = not isEscaped( line, i );
                 if( notEsc )    // stop processing the line
                 { 
                     endWord( words, word );
@@ -258,6 +254,8 @@ namespace lexer
                     word += line[i];
                 continue;
             }
+            if( line[i] == '\\' ) notEsc = false;
+            else notEsc = true;
             // default
             word += line[i];
         }
