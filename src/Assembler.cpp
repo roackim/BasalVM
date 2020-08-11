@@ -1,6 +1,7 @@
 #include <iterator>
 #include <fstream>
 #include <cmath>
+#include <vector>
 #include "Assembler.h"
 #include "lexer.h"
 
@@ -197,55 +198,18 @@ namespace basm
         }
     }
 
-    // match regex with string to find corresponding Type, and pakc both type and Txt in a token object.
-    token Assembler::tokenize( string txt )
+    // tokenize a split line  ( called after lexer::splitLine )
+    void Assembler::tokenizeOneLine( const string& line )  
     {
-        Type type = UNKNOWN;
-        if     ( txt == "," ) type = COMMA;
-        else if( txt == "@" ) type = AROBASE;
-        else if( txt == ";" ) type = ENDL;
-        else if( txt == ":" ) type = COLON;
-        else if( txt == "(" ) type = LPAREN;
-        else if( txt == ")" ) type = RPAREN;
-        else if( txt == "s" or txt == "ms"  or txt == "us") type = TIME;        // try to match time units 
-        else if( txt == "int" or txt == "char" or txt == "mem" or txt == "str" 
-                or txt == "hex" or txt == "bin" ) type = DISP_TYPE; // try to match time units 
-        else if( lexer::matchOP( txt ))            type = OP;                // try to match op
-        else if( lexer::matchFlag( txt ))            type = CPUFLAG;            // try to match Flags
-        else if( lexer::matchFlowCtrl( txt ))        type = COND;            // try to match conditions for flags
-        else if( lexer::matchReg( txt ))            type = REG;                // try to match registers
-        else if( lexer::matchCharValue( txt ))        type = CHAR_VALUE;        // try to match char literals ex: 'a', '\n'
-        else if( lexer::matchDecimalValue( txt ))  type = DECIMAL_VALUE;    // try to match decimal values
-        else if( lexer::matchHexaValue( txt ))        type = HEXA_VALUE;        // try to match hexa values
-        else if( lexer::matchBinValue( txt ))        type = BINARY_VALUE;    // try to match binary values
-        else if( lexer::matchLabelDecl( txt ))     type = LABEL_DECL;        // try to match label declaration ex:  :Hello_World_Proc
-        else if( lexer::matchLabel( txt))            type = LABEL;            // try to match label call ex: jump Hello_World_Proc
-
-        token ret( txt, type );
-        return( ret ); 
+        vector<string> words = lexer::splitLine( line );
+        for( uint32_t i=0; i<words.size(); i++)
+        {
+            token t = lexer::tokenizeOneWord( words[i] );
+            tokens.push_back( t );
+        }
     }
 
-
-    // get one token from a string already split // called by loadAndTokenize
-    bool Assembler::getOneToken( string& line )  
-    {
-        if( line == "" )
-            return false;
-        string delstr = "|";
-        unsigned del;
-        string tokenStr = "";
-
-        del = line.find( delstr );
-        tokenStr = line.substr(0, del);            // get first token
-        line.erase(0, del + delstr.length());    // erase first token and delimiter
-        
-        token t = tokenize( tokenStr );
-
-        tokens.push_back( t );
-        return true;
-    }
-
-    // load a file and tokenize it
+    // load a file and tokenize it // TODO Refactor with lexer removespace
     bool Assembler::loadAndTokenize( string fileName )
     {
 
@@ -259,8 +223,7 @@ namespace basm
 
             while(rfile.getline( line, 120 ))    // tokenize whole line for every lines
             {
-                string s = lexer::removeSpace( line );
-                while( getOneToken( s ) ){ }
+                tokenizeOneLine( line );
             }
         }
         else
@@ -280,10 +243,10 @@ namespace basm
     // assemble instructions from the target basm file
     bool Assembler::assemble( string fileName )
     {
-        rsp = 0;                     // isntruction count, used for LABEL_DECL
-        if( !loadAndTokenize( fileName )) // we can now use tokens
+        rsp = 0;                     // instruction count, used for LABEL_DECL
+        if( !loadAndTokenize( fileName )) // error while tokenizing
             return false;
-    
+
         if( !tokens.empty() )
         {
             

@@ -7,9 +7,13 @@
 #include <map>
 
 using std::string;
+using std::vector;
+using std::map;
 using std::cout;
 using std::cerr;
 using std::endl;
+
+using lexer::token;
 
 
         
@@ -19,14 +23,14 @@ namespace basm   // keep things contained in a namespace.  basm = Basal Assembly
     class Assembler
     {
     public:
-        std::vector<uint32_t> program;          // store all the instructions
+        vector<uint32_t> program;          // store all the instructions
 
     private:
         uint64_t rsp{ 0 };                      // increment every time an instruction is parsed, used to map labels to program address
         uint64_t j{ 0 };                        // used to count tokens
         uint64_t lineNbr{ 1 };                  // one empty line is always artifially added at the begining
-        std::vector<token> tokens;              // store all tokens
-        std::map<string, uint16_t> declared_labels;      // store addresses of labels
+        vector<token> tokens;                   // store all tokens
+        map<string, uint16_t> declared_labels;  // store addresses of labels
         token current;                          // used as current token
 
     public:
@@ -58,11 +62,8 @@ namespace basm   // keep things contained in a namespace.  basm = Basal Assembly
         // current token must be a comma, compileError and return false otherwise
         bool readComma( void );
 
-        // match regex with string to find corresponding Type, and pakc both type and Txt in a token object.
-        token tokenize( string txt );
-
         // get one token from a string already split 
-        bool getOneToken( string& line );
+        void tokenizeOneLine( const string& line );
 
         // load a file and tokenize it
         bool loadAndTokenize( string fileName );
@@ -105,8 +106,6 @@ namespace basm   // keep things contained in a namespace.  basm = Basal Assembly
 
         // opcode 0, CLS
         bool parseCLSInstr( void );
-
-
 
     };
 }

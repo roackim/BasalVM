@@ -39,19 +39,22 @@ namespace basm
         UNKNOWN
     };
 
+    // helper function, allow to get string from enum
+    string getTypeStr( Type type );
+}
+
+namespace lexer
+{
     class token // contains the type and the text 
     {
     public:
         string text;
-        Type type = UNKNOWN;
-        token( const string& s, Type t )
+        basm::Type type = basm::UNKNOWN;
+        token( const string& s, basm::Type t )
         : text( s )
         , type( t ) { }
         token()
         {
         }
     };
-
-    // helper function, allow to get string from enum
-    string getTypeStr( Type type );
 }
