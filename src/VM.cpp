@@ -8,7 +8,7 @@
 
 #include "misc.h"
 #include "VM.h"
-#include "parser.h"
+#include "lexer.h"
 
 using std::string;
 using std::cout;
@@ -29,7 +29,7 @@ OP getInstruction( const uint32_t& instruction )
 // take a string and return if possible the correct 16 bits number
 uint16_t parseInputValue( string value )
 {
-    if( parser::matchBinValue( value ) )
+    if( lexer::matchBinValue( value ) )
     {
         value = value.substr( 2, value.length() - 1 ); // remove the base before number eg : 0b0101 -> 0101
         if( value.length() > 16 )
@@ -40,7 +40,7 @@ uint16_t parseInputValue( string value )
         long int i = std::stol( value.c_str(), nullptr, 2);
         return static_cast<uint16_t>( i );
     }
-    else if( parser::matchHexaValue( value ) )
+    else if( lexer::matchHexaValue( value ) )
     {
         value = value.substr( 2, value.length() - 1 ); // remove the base before number eg : 0x0FA2 -> 0FA2
         if( value.length() > 4 )
@@ -51,7 +51,7 @@ uint16_t parseInputValue( string value )
         long int i = std::stol( value.c_str(), nullptr, 16);
         return static_cast<uint16_t>( i );
     }
-    else if( parser::matchDecimalValue( value) )
+    else if( lexer::matchDecimalValue( value) )
     {
         int32_t i = atoi( value.c_str() );
         if( i > 65536 or i < -32768 )
@@ -508,7 +508,7 @@ void VM::executePROMPT( const uint32_t& instruction )
                 uint16_t input_value;
                 string input_string;
                 cin >> input_string;
-                if( parser::matchHexaValue( input_string.c_str() ))
+                if( lexer::matchHexaValue( input_string.c_str() ))
                     input_value = parseInputValue( input_string );
                 else
                     input_value = 0;
@@ -520,7 +520,7 @@ void VM::executePROMPT( const uint32_t& instruction )
                 uint16_t input_value;
                 string input_string;
                 cin >> input_string;
-                if( parser::matchBinValue( input_string.c_str() ))
+                if( lexer::matchBinValue( input_string.c_str() ))
                     input_value = parseInputValue( input_string );
                 else
                     input_value = 0;

@@ -2,7 +2,7 @@
 #include <fstream>
 #include <cmath>
 #include "Assembler.h"
-#include "parser.h"
+#include "lexer.h"
 
  
 namespace basm
@@ -210,16 +210,16 @@ namespace basm
         else if( txt == "s" or txt == "ms"  or txt == "us") type = TIME;        // try to match time units 
         else if( txt == "int" or txt == "char" or txt == "mem" or txt == "str" 
                 or txt == "hex" or txt == "bin" ) type = DISP_TYPE; // try to match time units 
-        else if( parser::matchOP( txt ))            type = OP;                // try to match op
-        else if( parser::matchFlag( txt ))            type = CPUFLAG;            // try to match Flags
-        else if( parser::matchFlowCtrl( txt ))        type = COND;            // try to match conditions for flags
-        else if( parser::matchReg( txt ))            type = REG;                // try to match registers
-        else if( parser::matchCharValue( txt ))        type = CHAR_VALUE;        // try to match char literals ex: 'a', '\n'
-        else if( parser::matchDecimalValue( txt ))  type = DECIMAL_VALUE;    // try to match decimal values
-        else if( parser::matchHexaValue( txt ))        type = HEXA_VALUE;        // try to match hexa values
-        else if( parser::matchBinValue( txt ))        type = BINARY_VALUE;    // try to match binary values
-        else if( parser::matchLabelDecl( txt ))     type = LABEL_DECL;        // try to match label declaration ex:  :Hello_World_Proc
-        else if( parser::matchLabel( txt))            type = LABEL;            // try to match label call ex: jump Hello_World_Proc
+        else if( lexer::matchOP( txt ))            type = OP;                // try to match op
+        else if( lexer::matchFlag( txt ))            type = CPUFLAG;            // try to match Flags
+        else if( lexer::matchFlowCtrl( txt ))        type = COND;            // try to match conditions for flags
+        else if( lexer::matchReg( txt ))            type = REG;                // try to match registers
+        else if( lexer::matchCharValue( txt ))        type = CHAR_VALUE;        // try to match char literals ex: 'a', '\n'
+        else if( lexer::matchDecimalValue( txt ))  type = DECIMAL_VALUE;    // try to match decimal values
+        else if( lexer::matchHexaValue( txt ))        type = HEXA_VALUE;        // try to match hexa values
+        else if( lexer::matchBinValue( txt ))        type = BINARY_VALUE;    // try to match binary values
+        else if( lexer::matchLabelDecl( txt ))     type = LABEL_DECL;        // try to match label declaration ex:  :Hello_World_Proc
+        else if( lexer::matchLabel( txt))            type = LABEL;            // try to match label call ex: jump Hello_World_Proc
 
         token ret( txt, type );
         return( ret ); 
@@ -259,7 +259,7 @@ namespace basm
 
             while(rfile.getline( line, 120 ))    // tokenize whole line for every lines
             {
-                string s = parser::removeSpace( line );
+                string s = lexer::removeSpace( line );
                 while( getOneToken( s ) ){ }
             }
         }
@@ -367,7 +367,7 @@ namespace basm
         }
         else if( current.type == OP )
         {
-            string op = parser::to_lower( current.text );
+            string op = lexer::to_lower( current.text );
 
             // cout << current.text << ": " << rsp << endl;
             rsp++;
@@ -466,7 +466,7 @@ namespace basm
         uint32_t instruction = 0x00000000;
 
         // Compute OP Code
-        string op = parser::to_lower( current.text );
+        string op = lexer::to_lower( current.text );
         if     ( op == "add" ) instruction = 0x10000000;
         else if( op == "sub" ) instruction = 0x20000000;
         else if( op == "copy") instruction = 0x30000000;
@@ -571,7 +571,7 @@ namespace basm
         uint32_t instruction = 0x80000000;
 
         // Compute OP Code
-        string op = parser::to_lower( current.text );
+        string op = lexer::to_lower( current.text );
         if     ( op == "and" ) instruction |= 0x01000000;
         else if( op == "or" )  instruction |= 0x02000000;
         else if( op == "not")  instruction |= 0x03000000;
@@ -680,7 +680,7 @@ namespace basm
     bool Assembler::parseJumpBasedInstr( void )
     {
         uint32_t instruction = 0xB0000000;
-        string op = parser::to_lower( current.text );
+        string op = lexer::to_lower( current.text );
         if( op == "jump" )
         {
             readToken();
@@ -995,7 +995,7 @@ namespace basm
     // opcode 12, DISP, INPUT
     bool Assembler::parsePromptInstr( void )
     {
-        string op = parser::to_lower( current.text );
+        string op = lexer::to_lower( current.text );
         if( op == "disp" )
             return parseDispInstr();
         else if( op == "input" )
