@@ -28,7 +28,7 @@ namespace basm   // keep things contained in a namespace.  basm = Basal Assembly
     private:
         uint64_t rsp{ 0 };                      // increment every time an instruction is parsed, used to map labels to program address
         uint64_t j{ 0 };                        // used to count tokens
-        uint64_t lineNbr{ 1 };                  // one empty line is always artifially added at the begining
+        uint64_t lineNbr{ 0 };                  // one empty line is always artifially added at the begining
         vector<token> tokens;                   // store all tokens
         map<string, uint16_t> declared_labels;  // store addresses of labels
         token current;                          // used as current token
