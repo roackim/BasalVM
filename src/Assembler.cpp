@@ -1002,7 +1002,7 @@ namespace basm
     }
 
     // opcode 14, WAIT
-    bool Assembler::parseWaitInstr( void )
+    boool Assembler::parseWaitInstr( void )
     {
         uint32_t instruction = 0xE0000000;
         readToken(); // skip wait token
