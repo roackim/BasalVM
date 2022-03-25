@@ -34,9 +34,6 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	@$(MKDIR_P) $(dir $@)
 	@$(CXX) $(CMP_FLAGS) -c $< -o $@
 	@echo $(CXX) -Wall -Wextra ... -c $< -o $@
-	@# Static Analysis
-	@cppclean $<
-	@cppcheck $<
 
 flags:
 	@echo Flags used for building project:
