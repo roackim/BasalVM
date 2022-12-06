@@ -6,20 +6,21 @@ It is quite performant, being able to execute ~20k instructions in 0.5 ms.
 # Dependencies
 	- gcc
     - make
-	- cppclean  ( removable from makefile, like cppcheck )
-	- cppcheck
+    
+# Building
+    make
+
 	
 The project is compiled with a very large set of warnings enabled, which you can see typing "make flags".
 It should compile without any warning being prompt, except a few from Static Analysis.
 
 # Usage
 
-Currently the assembler and the VM are coupled together, meaning you can only use both at the same time, meaning there is only one way to run the project:
+Currently the assembler and the VM are coupled together, meaning you can only use the vm on textual representation of the bytecode:
 
 ./main <basm_file>
 
-	ex : 	./bin/main bin/examples/GameOfLife.basm
-	or :	cd bin && ./main examples/GameOfLife.basm
+	ex : 	./bin/main examples/GameOfLife.basm
 
 
 # Basal Assembler
@@ -32,7 +33,7 @@ of Conway's Game Of Life as well as other programs.
 
 #Examples :
 
-Game of life running on basal VM (bin/examples/GameOfLife.basm) :
+You can find example programs in the examples folder, these have been hand programmed, but ultimately this assembler should be used as a backend for a compiler.
 
 ![Game of life running on basal VM](preview.gif?raw=true "Basal VM interpreting bin/examples/GameOfLife.basm")
 
