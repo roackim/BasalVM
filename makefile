@@ -25,8 +25,6 @@ $(BIN_DIR)/$(TARGET_EXEC): $(OBJS)
 	@echo Build complete.
 
 
-
-
 # c++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	@echo Compiling ...
@@ -51,7 +49,8 @@ analyse: # analyse every source files, with maximum warnings on cppcheck
 clean:
 	@$(RM) -r $(BUILD_DIR)
 
-
+gof: bin/main
+	./bin/main examples/GameOfLife.basm
 
 
 -include $(DEPS)

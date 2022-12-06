@@ -31,13 +31,17 @@ It has severals features such as dereferencing registers, using immediate values
 Check Doc.md for more details. You can also check the code sample in bin/example, you'll find an implementation
 of Conway's Game Of Life as well as other programs.
 
-#Examples :
+#Examples:
 
 You can find example programs in the examples folder, these have been hand programmed, but ultimately this assembler should be used as a backend for a compiler.
 
+Game of Life, randomly instanciated:
+
+    make gof
+
 ![Game of life running on basal VM](preview.gif?raw=true "Basal VM interpreting bin/examples/GameOfLife.basm")
 
-Display the first elements of the Fibonacci sequence (bin/examples/fibonacci.basm) :
+Display the first elements of the Fibonacci sequence (bin/examples/fibonacci.basm):
 
 	#--------------------
 	# Fibonacci Sequence
