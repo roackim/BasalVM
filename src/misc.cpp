@@ -19,11 +19,14 @@ short coef( bool value )
 // allow to clear the console output depending on the OS
 void ClearConsole()
 {
+    int res;
 #if defined _WIN32
-    system("cls");
+    res = system("cls");
 #elif defined (__LINUX__) || defined(__gnu_linux__) || defined(__linux__)
-    system("clear");
+    res = system("clear");
 #elif defined (__APPLE__)
-    system("clear");
+    res = system("clear");
 #endif
+
+    if (res != 0) std::cerr << "/!\\ Warning : cannot clear screen" << std::endl;
 }
